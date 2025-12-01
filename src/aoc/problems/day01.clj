@@ -10,20 +10,25 @@
         num-clicks (->> instruction rest (string/join #"") Integer/parseInt)]
     [op num-clicks]))
 
-(defn- turn-dial [rotations current-pos]
-  (when (seq rotations)
-    (let [[turn-fn num-clicks] (-> rotations first parse-instruction)]
-      [(rest rotations) (mod (turn-fn current-pos num-clicks) 100)])))
+(defn- turn-dial [current-pos instruction]
+  (let [[turn-fn num-clicks] (parse-instruction instruction)]
+    (-> current-pos
+        (turn-fn num-clicks)
+        (mod 100))))
 
-;; From the example: 0-99 nums; "-" => "L", "+" => "R"
+(defn- get-password [rotations]
+  (reduce turn-dial 50 rotations))
+
+;; AOC example:
 (comment
-  (mod (- 50 68) 100)
-  (mod (- 82 30) 100)
-  (mod (+ 52 48) 100))
+  (get-password ["L68"
+                 "L30"
+                 "R48"
+                 "L5"
+                 "R60"
+                 "L55"
+                 "L1"
+                 "L99"
+                 "R14"
+                 "L82"]))
 
-(comment
-  (read-file-lines "input/day01/problem-1-input.txt"))
-
-(comment (parse-instruction "L1"))
-
-(comment (turn-dial ["L68" "L30"] 50))
