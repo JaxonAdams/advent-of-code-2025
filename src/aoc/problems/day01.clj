@@ -29,11 +29,8 @@
   (let [[current-pos num-zeros] pos-info
         [turn-fn num-clicks] (parse-instruction instruction)
         raw-new-pos (turn-fn current-pos num-clicks)
-
-        new-pos (mod (mod raw-new-pos 100) 100)
-
+        new-pos (mod raw-new-pos 100)
         times-passed-zero (count-zero-crossings current-pos turn-fn num-clicks)]
-
     [new-pos
      (+ num-zeros times-passed-zero)]))
 
