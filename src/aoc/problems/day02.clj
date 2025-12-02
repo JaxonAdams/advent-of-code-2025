@@ -11,7 +11,15 @@
        (partition n n "X")
        (map (partial apply str))))
 
-(defn- is-invalid-id? [num]
+(defn- is-twice-repeated-sequence? [num]
+  (if (-> num str count (mod 2) zero? not)
+    false
+    (let [n-str (str num)
+          first-half (apply str (take (/ (count n-str) 2) n-str))
+          second-half (apply str (take-last (/ (count n-str) 2) n-str))]
+      (= first-half second-half))))
+
+(defn- is-repeated-sequence? [num]
   (let [n-str (str num)
         max-times-to-partition (count n-str)
         partitions (map #(str-partition % n-str) (range 1 max-times-to-partition))
@@ -19,44 +27,47 @@
     (boolean (seq with-repeats))))
 
 (defn- get-invalid-ids
-  [range-str]
+  [validator range-str]
   (let [range-to-check (parse-range range-str)]
-    (filter is-invalid-id? range-to-check)))
+    (filter validator range-to-check)))
 
 (defn get-invalid-id-sum
-  [range-strs]
+  [validator range-strs]
   (->> range-strs
-       (map get-invalid-ids)
+       (map (partial get-invalid-ids validator))
        flatten
        (reduce +)))
 
 ;; ----------------------------------------------------------------------------
+;; PROBLEM 1
 
 ;; Examples from AOC
 (comment
   ;; 11 and 22
-  (get-invalid-ids "11-22")
-  ;; 99 and 111
-  (get-invalid-ids "95-115")
-  ;; 1010 and 1010
-  (get-invalid-ids "998-1012")
+  (get-invalid-ids is-twice-repeated-sequence? "11-22")
+  ;; 99
+  (get-invalid-ids is-twice-repeated-sequence? "95-115")
+  ;; 1010
+  (get-invalid-ids is-twice-repeated-sequence? "998-1012")
   ;; 1188511885
-  (get-invalid-ids "1188511880-1188511890"))
+  (get-invalid-ids is-twice-repeated-sequence? "1188511880-1188511890"))
 
 ;; Solution example from AOC
 (comment
-  ;; 4174379265
-  (get-invalid-id-sum ["11-22"
-                       "95-115"
-                       "998-1012"
-                       "1188511880-1188511890"
-                       "222220-222224"
-                       "1698522-1698528"
-                       "446443-446449"
-                       "38592856-38593862"
-                       "565653-565659"
-                       "824824821-824824827"
-                       "2121212118-2121212124"]))
+  ;; 1227775554
+  (get-invalid-id-sum
+   is-twice-repeated-sequence?
+   ["11-22"
+    "95-115"
+    "998-1012"
+    "1188511880-1188511890"
+    "222220-222224"
+    "1698522-1698528"
+    "446443-446449"
+    "38592856-38593862"
+    "565653-565659"
+    "824824821-824824827"
+    "2121212118-2121212124"]))
 
 ;; Check using the actual input...
 (comment
@@ -64,4 +75,43 @@
                    slurp
                    (string/split #",")
                    (->> (map string/trim)))]
-    (get-invalid-id-sum ranges)))
+    (get-invalid-id-sum is-twice-repeated-sequence? ranges)))
+
+;; ----------------------------------------------------------------------------
+;; PROBLEM 2
+
+;; Examples from AOC
+(comment
+  ;; 11 and 22
+  (get-invalid-ids is-repeated-sequence? "11-22")
+  ;; 99 and 111
+  (get-invalid-ids is-repeated-sequence? "95-115")
+  ;; 999 and 1010
+  (get-invalid-ids is-repeated-sequence? "998-1012")
+  ;; 1188511885
+  (get-invalid-ids is-repeated-sequence? "1188511880-1188511890"))
+
+;; Solution example from AOC
+(comment
+  ;; 4174379265
+  (get-invalid-id-sum
+   is-repeated-sequence?
+   ["11-22"
+    "95-115"
+    "998-1012"
+    "1188511880-1188511890"
+    "222220-222224"
+    "1698522-1698528"
+    "446443-446449"
+    "38592856-38593862"
+    "565653-565659"
+    "824824821-824824827"
+    "2121212118-2121212124"]))
+
+;; Check using the actual input...
+(comment
+  (let [ranges (-> "input/day02/day02-input.txt"
+                   slurp
+                   (string/split #",")
+                   (->> (map string/trim)))]
+    (get-invalid-id-sum is-repeated-sequence? ranges)))
