@@ -19,9 +19,6 @@
     (boolean (seq with-repeats))))
 
 (defn- get-invalid-ids
-  "Get all 'invalid' IDs in a given range [START, STOP] (formated START-STOP).
-   An ID is invalid if it consists solely of some sequence of digits repeated twice;
-   e.g. 55 (five twice), 6464 (64 twice), and 123123 (123 twice)."
   [range-str]
   (let [range-to-check (parse-range range-str)]
     (filter is-invalid-id? range-to-check)))
