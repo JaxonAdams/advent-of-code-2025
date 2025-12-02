@@ -6,14 +6,6 @@
         [start stop] (map Long/parseLong range-str-split)]
     (range start (inc stop))))
 
-; (defn- is-invalid-id? [num]
-;   (if (-> num str count (mod 2) zero? not)
-;     false
-;     (let [n-str (str num)
-;           first-half (apply str (take (/ (count n-str) 2) n-str))
-;           second-half (apply str (take-last (/ (count n-str) 2) n-str))]
-;       (= first-half second-half))))
-
 (defn- str-partition [n s]
   (->> s
        (partition n n "X")
@@ -40,6 +32,8 @@
        (map get-invalid-ids)
        flatten
        (reduce +)))
+
+;; ----------------------------------------------------------------------------
 
 ;; Examples from AOC
 (comment
