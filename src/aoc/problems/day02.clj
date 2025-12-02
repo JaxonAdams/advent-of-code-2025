@@ -6,13 +6,25 @@
         [start stop] (map Long/parseLong range-str-split)]
     (range start (inc stop))))
 
+; (defn- is-invalid-id? [num]
+;   (if (-> num str count (mod 2) zero? not)
+;     false
+;     (let [n-str (str num)
+;           first-half (apply str (take (/ (count n-str) 2) n-str))
+;           second-half (apply str (take-last (/ (count n-str) 2) n-str))]
+;       (= first-half second-half))))
+
+(defn- str-partition [n s]
+  (->> s
+       (partition n n "X")
+       (map (partial apply str))))
+
 (defn- is-invalid-id? [num]
-  (if (-> num str count (mod 2) zero? not)
-    false
-    (let [n-str (str num)
-          first-half (apply str (take (/ (count n-str) 2) n-str))
-          second-half (apply str (take-last (/ (count n-str) 2) n-str))]
-      (= first-half second-half))))
+  (let [n-str (str num)
+        max-times-to-partition (count n-str)
+        partitions (map #(str-partition % n-str) (range 1 max-times-to-partition))
+        with-repeats (filter (partial apply =) partitions)]
+    (boolean (seq with-repeats))))
 
 (defn- get-invalid-ids
   "Get all 'invalid' IDs in a given range [START, STOP] (formated START-STOP).
@@ -33,16 +45,16 @@
 (comment
   ;; 11 and 22
   (get-invalid-ids "11-22")
-  ;; 99
+  ;; 99 and 111
   (get-invalid-ids "95-115")
-  ;; 1010
+  ;; 1010 and 1010
   (get-invalid-ids "998-1012")
   ;; 1188511885
   (get-invalid-ids "1188511880-1188511890"))
 
 ;; Solution example from AOC
 (comment
-  ;; 1227775554
+  ;; 4174379265
   (get-invalid-id-sum ["11-22"
                        "95-115"
                        "998-1012"
@@ -50,7 +62,10 @@
                        "222220-222224"
                        "1698522-1698528"
                        "446443-446449"
-                       "38592856-38593862"]))
+                       "38592856-38593862"
+                       "565653-565659"
+                       "824824821-824824827"
+                       "2121212118-2121212124"]))
 
 ;; Check using the actual input...
 (comment
