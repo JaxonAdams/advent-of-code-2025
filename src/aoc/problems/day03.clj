@@ -2,39 +2,34 @@
   (:require [clojure.string :as string]
             [utils.files :refer [read-file-lines]]))
 
-;; TODO: Come back and clean this up!
-;; I got the right answer but this code could use some work...
-
 (defn- parse-digits-with-idx
   [s]
-  (->> (string/split s #"")
-       (map #(Integer/parseInt %))
-       (map-indexed vector)
-       vec))
+  (vec
+   (keep-indexed
+    (fn [idx char]
+      [idx (Character/digit char 10)])
+    s)))
 
-(defn largest-subseq-from
+(defn- find-max-pick
+  [candidates]
+  (let [max-val (apply max (map second candidates))]
+    (first (filter #(= max-val (second %)) candidates))))
+
+(defn- largest-subseq-from
   [v start k]
-  (let [n (count v)]
-    (loop [i start, remaining k, chosen []]
-      (if (zero? remaining)
-        chosen
-        (let [last-idx (- n remaining)
-              candidates (subvec v i (inc last-idx))
-              max-digit (apply max (map second candidates))
-              pick     (first (filter #(= max-digit (second %)) candidates))
-              p-idx    (first pick)]
-          (recur (inc p-idx) (dec remaining) (conj chosen pick)))))))
+  (when (pos? k)
+    (let [n (count v)
+          last-idx (- n k)
+          candidates (subvec v start (inc last-idx))
+          pick (find-max-pick candidates)
+          p-idx (first pick)]
+      (cons pick (largest-subseq-from v (inc p-idx) (dec k))))))
 
-(defn- get-max-voltage [battery-bank num-batteries-to-use]
-  (let [offset (dec num-batteries-to-use)
-        v (parse-digits-with-idx battery-bank)
-        n (count v)
-        tens-slice (subvec v 0 (- n offset))
-        max-digit (apply max (map second tens-slice))
-        first-pick (first (filter #(= (second %) max-digit) tens-slice))
-        first-idx  (first first-pick)
-        rest-picks (largest-subseq-from v (inc first-idx) offset)]
-    (->> (cons first-pick rest-picks)
+(defn- get-max-voltage
+  [battery-bank num-batteries-to-use]
+  (let [v (parse-digits-with-idx battery-bank)
+        picks (largest-subseq-from v 0 num-batteries-to-use)]
+    (->> picks
          (map second)
          (apply str)
          Long/parseLong)))
