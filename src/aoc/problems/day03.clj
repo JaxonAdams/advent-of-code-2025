@@ -25,37 +25,29 @@
               p-idx    (first pick)]
           (recur (inc p-idx) (dec remaining) (conj chosen pick)))))))
 
-(defn- max-voltage [battery-bank]
-  (let [voltages (-> battery-bank
-                     (string/split #"")
-                     (->> (map Integer/parseInt)
-                          (map-indexed vector)))
-        tens-candidates (reverse (sort-by second (take (dec (count battery-bank)) voltages)))
-        max-voltages-tens (sort-by first (filter #(-> tens-candidates first second (= (second %))) tens-candidates))
-        max-voltage (first max-voltages-tens)
-        ones-candidates (reverse (sort-by second (second (split-at (-> max-voltage first inc) voltages))))
-        next-max-voltage (first ones-candidates)]
-    (->> [max-voltage next-max-voltage]
-         (map second)
-         (apply str)
-         Integer/parseInt)))
-
-(defn- max-voltage-twelve-batteries [battery-bank]
-  (let [v (parse-digits-with-idx battery-bank)
+(defn- get-max-voltage [battery-bank num-batteries-to-use]
+  (let [offset (dec num-batteries-to-use)
+        v (parse-digits-with-idx battery-bank)
         n (count v)
-        tens-slice (subvec v 0 (- n 11))
+        tens-slice (subvec v 0 (- n offset))
         max-digit (apply max (map second tens-slice))
         first-pick (first (filter #(= (second %) max-digit) tens-slice))
         first-idx  (first first-pick)
-        rest-picks (largest-subseq-from v (inc first-idx) 11)]
+        rest-picks (largest-subseq-from v (inc first-idx) offset)]
     (->> (cons first-pick rest-picks)
          (map second)
          (apply str)
          Long/parseLong)))
 
+(defn- max-voltage-two-batteries [battery-bank]
+  (get-max-voltage battery-bank 2))
+
+(defn- max-voltage-twelve-batteries [battery-bank]
+  (get-max-voltage battery-bank 12))
+
 (defn sum-of-max-volts [battery-banks]
   (->> battery-banks
-       (map max-voltage)
+       (map max-voltage-two-batteries)
        (reduce +)))
 
 (defn sum-of-max-volts-twelve-batteries [battery-banks]
@@ -68,18 +60,18 @@
 
 (comment
   ;; 98
-  (max-voltage "987654321111111")
+  (max-voltage-two-batteries "987654321111111")
   ;; 89
-  (max-voltage "811111111111119")
+  (max-voltage-two-batteries "811111111111119")
   ;; 78
-  (max-voltage "234234234234278")
+  (max-voltage-two-batteries "234234234234278")
   ;; 92
-  (max-voltage "818181911112111"))
+  (max-voltage-two-batteries "818181911112111"))
 
 ;; EDGE CASES
 (comment
   ;; 99
-  (max-voltage "997654321111111"))
+  (max-voltage-two-batteries "997654321111111"))
 
 (comment
   ;; 357
