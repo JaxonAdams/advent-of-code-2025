@@ -1,5 +1,6 @@
 (ns aoc.problems.day04
-  (:require [clojure.string :as string]))
+  (:require [clojure.string :as string]
+            [utils.files :refer [read-file-lines]]))
 
 (defn get-neighbors-in-bounds [[x y] diagram-rows]
   (let [rows (count diagram-rows)
@@ -15,7 +16,7 @@
       [nx ny])))
 
 (defn get-character-from-pos [diagram-rows [x y]]
-  (-> diagram-rows (nth x) (nth y)))
+  (-> diagram-rows (nth x) (nth y) str))
 
 (defn- is-roll-accessible? [pos diagram-rows]
   (if (-> diagram-rows (get-character-from-pos pos) (not= "@"))
@@ -26,7 +27,7 @@
                             (assoc counts item (inc (get counts item 0))))
                           {}
                           adjacent-chars)]
-      (-> counted (get "@") (< 4)))))
+      (-> counted (get "@" 0) (< 4)))))
 
 (defn get-num-of-accessible-rolls [diagram-rows]
   (let [diagram-matrix (map #(string/split % #"") diagram-rows)
@@ -46,20 +47,25 @@
 ;; PART ONE
 
 ;; '@' = roll of paper
-(def example-diagram ["..@@.@@@@."
-                      "@@@.@.@.@@"
-                      "@@@@@.@.@@"
-                      "@.@@@@..@."
-                      "@@.@@@@.@@"
-                      ".@@@@@@@.@"
-                      ".@.@.@.@@@"
-                      "@.@@@.@@@@"
-                      ".@@@@@@@@."
-                      "@.@.@@@.@."]) ;; 13 can be accessed
-
-(def example-diagram-matrix (map #(string/split % #"") example-diagram))
+(comment
+  (def example-diagram ["..@@.@@@@."
+                        "@@@.@.@.@@"
+                        "@@@@@.@.@@"
+                        "@.@@@@..@."
+                        "@@.@@@@.@@"
+                        ".@@@@@@@.@"
+                        ".@.@.@.@@@"
+                        "@.@@@.@@@@"
+                        ".@@@@@@@@."
+                        "@.@.@@@.@."]) ;; 13 can be accessed
+  )
 
 (comment
+  (def example-diagram-matrix (map #(string/split % #"") example-diagram)))
+
+(comment
+  ;; false
+  (is-roll-accessible? [0 0] example-diagram-matrix)
   ;; false
   (is-roll-accessible? [0 7] example-diagram-matrix)
   ;; true
@@ -75,3 +81,9 @@
   ;; 13
   (get-num-of-accessible-rolls example-diagram))
 
+;; For the solution...
+(comment
+  (-> "input/day04/input.txt"
+      read-file-lines
+      (->> (map (partial string/join)))
+      get-num-of-accessible-rolls))

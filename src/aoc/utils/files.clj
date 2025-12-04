@@ -4,4 +4,5 @@
 (defn read-file-lines [file-path]
   (-> file-path
       slurp
-      (string/split #"\n")))
+      (string/split #"\n")
+      (->> (map string/trim))))
