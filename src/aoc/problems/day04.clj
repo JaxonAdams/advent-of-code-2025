@@ -2,7 +2,7 @@
   (:require [clojure.string :as string]
             [utils.files :refer [read-file-lines]]))
 
-(defn get-neighbors-in-bounds [[x y] diagram-rows]
+(defn- get-neighbors-in-bounds [[x y] diagram-rows]
   (let [rows (count diagram-rows)
         cols (count (first diagram-rows))]
     (for [dx [-1 0 1]
@@ -15,7 +15,7 @@
                  (<= 0 ny (dec cols)))]
       [nx ny])))
 
-(defn get-character-from-pos [diagram-rows [x y]]
+(defn- get-character-from-pos [diagram-rows [x y]]
   (-> diagram-rows (nth x) (nth y) str))
 
 (defn- is-roll-accessible? [pos diagram-rows]
@@ -42,6 +42,24 @@
          flatten
          (filter identity)
          count)))
+
+(defn total-removable-rolls [diagram-rows]
+  (let [grid (mapv #(vec (string/split % #"")) diagram-rows)
+        rows (count grid)
+        cols (count (first grid))]
+    (loop [g grid
+           total-removed 0]
+      ;; Find all currently accessible rolls
+      (let [accessible (for [r (range rows)
+                             c (range cols)
+                             :when (= "@" (get-in g [r c]))
+                             :when (is-roll-accessible? [r c] g)]
+                         [r c])]
+        (if (empty? accessible)
+          total-removed
+          ;; Remove all accessible rolls this round and continue
+          (let [g' (reduce (fn [gr [r c]] (assoc-in gr [r c] ".")) g accessible)]
+            (recur g' (+ total-removed (count accessible)))))))))
 
 ;; ----------------------------------------------------------------------------
 ;; PART ONE
@@ -87,3 +105,28 @@
       read-file-lines
       (->> (map (partial string/join)))
       get-num-of-accessible-rolls))
+
+;; ----------------------------------------------------------------------------
+;; PART TWO
+
+(comment
+  ;; 43
+  (def example-diagram ["..@@.@@@@."
+                        "@@@.@.@.@@"
+                        "@@@@@.@.@@"
+                        "@.@@@@..@."
+                        "@@.@@@@.@@"
+                        ".@@@@@@@.@"
+                        ".@.@.@.@@@"
+                        "@.@@@.@@@@"
+                        ".@@@@@@@@."
+                        "@.@.@@@.@."])
+
+  (total-removable-rolls example-diagram))
+
+;; For the solution...
+(comment
+  (-> "input/day04/input.txt"
+      read-file-lines
+      (->> (map (partial string/join)))
+      total-removable-rolls))
