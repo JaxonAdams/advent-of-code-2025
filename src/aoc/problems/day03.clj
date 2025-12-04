@@ -1,32 +1,34 @@
 (ns aoc.problems.day03
-  (:require [clojure.string :as string]
-            [utils.files :refer [read-file-lines]]))
+  (:require [utils.files :refer [read-file-lines]]))
 
-(defn- parse-digits-with-idx
-  [s]
+(defn- parse-digits-with-idx [s]
   (vec
    (keep-indexed
     (fn [idx char]
       [idx (Character/digit char 10)])
     s)))
 
-(defn- find-max-pick
-  [candidates]
+(defn- find-max-pick [candidates]
   (let [max-val (apply max (map second candidates))]
     (first (filter #(= max-val (second %)) candidates))))
 
-(defn- largest-subseq-from
-  [v start k]
-  (when (pos? k)
-    (let [n (count v)
-          last-idx (- n k)
-          candidates (subvec v start (inc last-idx))
-          pick (find-max-pick candidates)
-          p-idx (first pick)]
-      (cons pick (largest-subseq-from v (inc p-idx) (dec k))))))
+(defn- largest-subseq-from [v start-idx k]
+  (loop [start start-idx
+         num-to-pick k
+         picks []]
+    (if (pos? num-to-pick)
+      (let [n (count v)
+            last-possible-idx (- n num-to-pick)
+            stop (inc last-possible-idx)
+            candidates (subvec v start stop)
+            pick (find-max-pick candidates)
+            p-idx (first pick)]
+        (recur (inc p-idx)
+               (dec num-to-pick)
+               (conj picks pick)))
+      picks)))
 
-(defn- get-max-voltage
-  [battery-bank num-batteries-to-use]
+(defn- get-max-voltage [battery-bank num-batteries-to-use]
   (let [v (parse-digits-with-idx battery-bank)
         picks (largest-subseq-from v 0 num-batteries-to-use)]
     (->> picks
