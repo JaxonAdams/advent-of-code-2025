@@ -64,7 +64,7 @@
   (let [ingredient-ranges (parse-ranges fresh-range-strings)
         merged-ranges (merge-ingredient-ranges ingredient-ranges)]
     (reduce (fn [count-so-far [range-start range-end]]
-              (+ count-so-far (inc (unchecked-long (- range-end range-start)))))
+              (+ count-so-far (inc (- range-end range-start))))
             0
             merged-ranges)))
 
