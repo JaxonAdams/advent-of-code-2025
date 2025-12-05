@@ -22,11 +22,11 @@
   (->> range-strings
        (mapv parse-range)))
 
-(defn- ingredient-is-in-range [ingredient-id fresh-range]
+(defn ingredient-is-in-range [ingredient-id fresh-range]
   (let [[start stop] (parse-range fresh-range)]
     (<= start ingredient-id stop)))
 
-(defn- is-fresh? [ingredient-id fresh-ranges]
+(defn is-fresh? [ingredient-id fresh-ranges]
   (->> fresh-ranges
        (filter (partial ingredient-is-in-range ingredient-id))
        count
@@ -39,7 +39,7 @@
        (map bool->int)
        (reduce +)))
 
-(defn merge-ingredient-ranges
+(defn- merge-ingredient-ranges
   [ingredient-ranges]
   (let [sorted-ranges (sort-by first ingredient-ranges)]
     (reduce
@@ -69,38 +69,6 @@
 ;; ----------------------------------------------------------------------------
 ;; PART ONE
 
-(comment
-  (def fresh-ranges ["3-5"
-                     "10-14"
-                     "16-20"
-                     "12-18"])
-
-  ;; false
-  (is-fresh? 1 fresh-ranges)
-  ;; true
-  (is-fresh? 5 fresh-ranges)
-  ;; false
-  (is-fresh? 8 fresh-ranges)
-  ;; true
-  (is-fresh? 11 fresh-ranges)
-  ;; false
-  (is-fresh? 32 fresh-ranges)
-
-  ;; 3
-  (total-fresh-from-available ["1" "5" "8" "11" "17" "32"] fresh-ranges)
-
-  (parse-input ["3-5"
-                "10-14"
-                "16-20"
-                "12-18"
-                ""
-                "1"
-                "5"
-                "8"
-                "11"
-                "17"
-                "32"]))
-
 ;; For the solution...
 (comment
   (-> "input/day05/input.txt"
@@ -110,15 +78,6 @@
 
 ;; ----------------------------------------------------------------------------
 ;; PART TWO
-
-(comment
-  (def fresh-ranges ["3-5"
-                     "10-14"
-                     "16-20"
-                     "12-18"])
-
-  ;; 14
-  (total-fresh fresh-ranges))
 
 ;; For the solution...
 (comment
