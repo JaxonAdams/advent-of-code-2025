@@ -1,5 +1,24 @@
 # Advent of Code 2025
 
+```
+         |
+        -+-
+         A
+        /=\               /\  /\    ___  _ __  _ __ __    __
+      i/ O \i            /  \/  \  / _ \| '__|| '__|\ \  / /
+      /=====\           / /\  /\ \|  __/| |   | |    \ \/ /
+      /  i  \           \ \ \/ / / \___/|_|   |_|     \  /
+    i/ O * O \i                                       / /
+    /=========\        __  __                        /_/    _
+    /  *   *  \        \ \/ /        /\  /\    __ _  ____  | |
+  i/ O   i   O \i       \  /   __   /  \/  \  / _` |/ ___\ |_|
+  /=============\       /  \  |__| / /\  /\ \| (_| |\___ \  _
+  /  O   i   O  \      /_/\_\      \ \ \/ / / \__,_|\____/ |_|
+i/ *   O   O   * \i
+/=================\
+       |___|
+```
+
 My solutions to [Advent of Code 2025](https://adventofcode.com/2025) implemented in Clojure.
 
 ## About
@@ -69,4 +88,4 @@ input/
 
 ## License
 
-Solutions are provided as-is for educational purposes. Advent of Code is created by [Eric Wastl](http://was.tl/).
+Solutions are provided as-is for educational purposes. Advent of Code is created by [Eric Wastl](http://was.tl/). README ASCII art retreived from [asciiart.eu](https://www.asciiart.eu/holiday-and-events/christmas/trees).
