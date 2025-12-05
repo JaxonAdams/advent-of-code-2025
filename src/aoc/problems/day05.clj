@@ -22,6 +22,23 @@
   (->> range-strings
        (mapv parse-range)))
 
+(defn- ingredient-is-in-range [ingredient-id fresh-range]
+  (let [[start stop] (parse-range fresh-range)]
+    (<= start ingredient-id stop)))
+
+(defn- is-fresh? [ingredient-id fresh-ranges]
+  (->> fresh-ranges
+       (filter (partial ingredient-is-in-range ingredient-id))
+       count
+       pos?))
+
+(defn total-fresh-from-available [ingredient-ids fresh-ranges]
+  (->> ingredient-ids
+       (map Long/parseLong)
+       (map #(is-fresh? % fresh-ranges))
+       (map bool->int)
+       (reduce +)))
+
 (defn merge-ingredient-ranges
   [ingredient-ranges]
   (let [sorted-ranges (sort-by first ingredient-ranges)]
@@ -39,25 +56,6 @@
              (conj merged-ranges [range-start range-end])))))
      []
      sorted-ranges)))
-
-(defn- ingredient-is-in-range [ingredient-id fresh-range]
-  (let [[start stop] (-> fresh-range
-                         (string/split #"-")
-                         (->> (map Long/parseLong)))]
-    (<= start ingredient-id stop)))
-
-(defn- is-fresh? [ingredient-id fresh-ranges]
-  (->> fresh-ranges
-       (filter (partial ingredient-is-in-range ingredient-id))
-       count
-       pos?))
-
-(defn total-fresh-from-available [ingredient-ids fresh-ranges]
-  (->> ingredient-ids
-       (map Long/parseLong)
-       (map #(is-fresh? % fresh-ranges))
-       (map bool->int)
-       (reduce +)))
 
 (defn total-fresh
   [fresh-range-strings]
