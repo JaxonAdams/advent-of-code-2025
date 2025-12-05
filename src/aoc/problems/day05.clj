@@ -67,4 +67,8 @@
                 "32"]))
 
 ;; For the solution...
-(comment)
+(comment
+  (-> "input/day05/input.txt"
+      read-file-lines
+      parse-input
+      ((fn [x] (total-fresh (:ingredient-ids x) (:fresh-ranges x))))))
