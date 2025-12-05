@@ -1,6 +1,5 @@
 (ns aoc.problems.day05
   (:require [clojure.string :as string]
-            [clojure.set :refer [union]]
             [utils.files :refer [read-file-lines]]))
 
 (defn- bool->int [b]
@@ -15,17 +14,37 @@
     {:fresh-ranges fresh-ranges
      :ingredient-ids ids}))
 
+(defn- parse-range [fresh-range]
+  (let [[start stop] (string/split fresh-range #"-")]
+    [(Long/parseLong start) (Long/parseLong stop)]))
+
+(defn- parse-ranges [range-strings]
+  (->> range-strings
+       (mapv parse-range)))
+
+(defn merge-ingredient-ranges
+  [ingredient-ranges]
+  (let [sorted-ranges (sort-by first ingredient-ranges)]
+    (reduce
+     (fn [merged-ranges [range-start range-end]]
+       (if (empty? merged-ranges)
+          ;; first range
+         [[range-start range-end]]
+         (let [[merged-start merged-end] (peek merged-ranges)]
+           (if (<= range-start (inc merged-end))
+              ;; ranges overlap or touch → extend previous range
+             (conj (pop merged-ranges)
+                   [merged-start (max merged-end range-end)])
+              ;; ranges separate → add new independent range
+             (conj merged-ranges [range-start range-end])))))
+     []
+     sorted-ranges)))
+
 (defn- ingredient-is-in-range [ingredient-id fresh-range]
   (let [[start stop] (-> fresh-range
                          (string/split #"-")
                          (->> (map Long/parseLong)))]
     (<= start ingredient-id stop)))
-
-(defn- ingredients-existing-in-range [fresh-range]
-  (let [[start stop] (-> fresh-range
-                         (string/split #"-")
-                         (->> (map Long/parseLong)))]
-    (set (range start (inc stop)))))
 
 (defn- is-fresh? [ingredient-id fresh-ranges]
   (->> fresh-ranges
@@ -40,11 +59,14 @@
        (map bool->int)
        (reduce +)))
 
-(defn total-fresh [fresh-ranges]
-  (->> fresh-ranges
-       (map ingredients-existing-in-range)
-       (reduce union)
-       count))
+(defn total-fresh
+  [fresh-range-strings]
+  (let [ingredient-ranges (parse-ranges fresh-range-strings)
+        merged-ranges (merge-ingredient-ranges ingredient-ranges)]
+    (reduce (fn [count-so-far [range-start range-end]]
+              (+ count-so-far (inc (unchecked-long (- range-end range-start)))))
+            0
+            merged-ranges)))
 
 ;; ----------------------------------------------------------------------------
 ;; PART ONE
@@ -99,3 +121,10 @@
 
   ;; 14
   (total-fresh fresh-ranges))
+
+;; For the solution...
+(comment
+  (-> "input/day05/input.txt"
+      read-file-lines
+      parse-input
+      ((fn [x] (total-fresh (:fresh-ranges x))))))
