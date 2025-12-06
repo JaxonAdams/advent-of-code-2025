@@ -1,6 +1,11 @@
 (ns aoc.problems.day06
   (:require [clojure.string :as string]))
 
+(defn- str->op [op-str]
+  (let [operator-map {"+" +
+                      "*" *}]
+    (get operator-map op-str)))
+
 (defn- parse-homework [homework-lines]
   (let [split-on-spaces (->> homework-lines
                              (map string/trim)
@@ -8,12 +13,23 @@
         operands (->> split-on-spaces
                       butlast
                       (map #(map Long/parseLong %)))
-        operations (last split-on-spaces)]
+        operators (->> split-on-spaces
+                       last
+                       (map str->op))]
     (map-indexed
      (fn [idx operation]
        (into [operation]
              (map #(nth % idx) operands)))
-     operations)))
+     operators)))
+
+(defn- solve-problem [problem]
+  (apply (first problem) (rest problem)))
+
+(defn solve-homework-problems [homework-lines]
+  (->> homework-lines
+       parse-homework
+       (map solve-problem)
+       (reduce +)))
 
 ;; ----------------------------------------------------------------------------
 ;; PART ONE
@@ -24,4 +40,10 @@
                  "  6 98  215 314"
                  "*   +   *   +  "])
 
-  (parse-homework problems))
+  (parse-homework problems)
+
+  ;; 33210
+  (solve-problem [* 123 45 6])
+
+  ;; 4277556
+  (solve-homework-problems problems))
