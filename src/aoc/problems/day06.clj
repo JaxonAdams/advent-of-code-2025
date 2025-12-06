@@ -1,5 +1,6 @@
 (ns aoc.problems.day06
-  (:require [clojure.string :as string]))
+  (:require [utils.files :refer [read-file-lines]]
+            [clojure.string :as string]))
 
 (defn- str->op [op-str]
   (let [operator-map {"+" +
@@ -47,3 +48,9 @@
 
   ;; 4277556
   (solve-homework-problems problems))
+
+;; For the solution...
+(comment
+  (-> "input/day06/input.txt"
+      read-file-lines
+      solve-homework-problems))
