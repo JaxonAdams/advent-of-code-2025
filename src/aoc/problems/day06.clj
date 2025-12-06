@@ -32,7 +32,7 @@
   (let [blanks-subbed (->> homework-lines
                            (map #(string/replace % #" " "X")))
         split-indices (->> blanks-subbed
-                           first
+                           last
                            (map-indexed
                             (fn [idx _]
                               (and (apply = (map #(nth % idx) blanks-subbed))
@@ -56,6 +56,7 @@
            (map rest)
            (map #(map (fn [s] (apply str (rest s))) %))
            (map transpose)
+           (map #(filter (fn [s] (-> s string/blank? not)) %))
            (map #(map (fn [s] (Long/parseLong (string/trim s))) %))
            (map (fn [op operands] (into [op] operands)) operators))
       grouped)))
