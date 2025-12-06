@@ -78,7 +78,7 @@ This project uses:
 
 ## Input Files
 
-Puzzle inputs are stored in `input/` and are gitignored per Advent of Code's [sharing policy](https://adventofcode.com/about). To run solutions, add your personal input files:
+Puzzle inputs are stored in `input/` and are gitignored. To run solutions, add your personal input files:
 
 ```
 input/
