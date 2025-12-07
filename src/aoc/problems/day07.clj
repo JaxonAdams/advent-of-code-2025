@@ -45,53 +45,37 @@
                  num-splits
                  updated-matrix))))))
 
-(defn- matrix?
-  [x]
-  (and (sequential? x)
-       (seq x)
-       (sequential? (first x))
-       (not (sequential? (first (first x))))))
-
-(defn- vector-of-matrices?
-  [x]
-  (and (sequential? x)
-       (seq x)
-       (every? matrix? x)))
-
-(defn- flatten-matrices
-  [v]
-  (reduce (fn [acc el]
-            (cond
-              (matrix? el) (conj acc el)
-              (vector-of-matrices? el) (into acc el)
-              :else (conj acc el)))
-          []
-          v))
-
-(defn- create-new-timelines [row-idx col-idx timeline-diagram-matrix]
-  (let [cell (get-in timeline-diagram-matrix [row-idx col-idx])
-        cell-above (get-in timeline-diagram-matrix [(dec row-idx) col-idx])]
+(defn create-new-timelines
+  [row-idx col-idx timeline-diagram-matrix previous-path]
+  (let [cell       (get-in timeline-diagram-matrix [row-idx col-idx])
+        cell-above (get-in timeline-diagram-matrix [(dec row-idx) col-idx])
+        latest-pos (peek previous-path)]
     (cond
-      (and
-       (= cell-above "|")
-       (= cell "^")) [(assoc-in timeline-diagram-matrix [row-idx (dec col-idx)] "|")
-                      (assoc-in timeline-diagram-matrix [row-idx (inc col-idx)] "|")]
-      (or
-       (= cell-above "S")
-       (= cell-above "|")) [(assoc-in timeline-diagram-matrix [row-idx col-idx] "|")]
-      :else timeline-diagram-matrix)))
+      (and (= latest-pos [(dec row-idx) col-idx])
+           (= cell "^"))
+      #{(conj previous-path [row-idx (dec col-idx)])
+        (conj previous-path [row-idx (inc col-idx)])}
 
-(defn run-many-worlds-tachyon-simulation [diagram-matrix]
+      (or (= cell-above "S")
+          (= latest-pos [(dec row-idx) col-idx]))
+      #{(conj previous-path [row-idx col-idx])}
+
+      :else
+      #{previous-path})))
+
+(defn run-many-worlds-tachyon-simulation
+  [diagram-matrix [beam-start-row beam-start-col]]
   (loop [row-idx 1
          col-idx 0
-         timelines [diagram-matrix]]
+         possible-tachyon-paths #{[[beam-start-row beam-start-col]]}]
+    (prn "POSITION:" [row-idx col-idx])
     (if (>= row-idx (count diagram-matrix))
-      (count timelines)
+      (count possible-tachyon-paths)
       (let [[next-row-idx next-col-idx] (get-next-cell row-idx col-idx diagram-matrix)
-            new-timelines (->> timelines
-                               (map (partial create-new-timelines row-idx col-idx))
-                               (flatten-matrices))]
-        (recur next-row-idx next-col-idx new-timelines)))))
+            new-possible-paths (->> possible-tachyon-paths
+                                    (mapcat (partial create-new-timelines row-idx col-idx diagram-matrix))
+                                    (into #{}))]
+        (recur next-row-idx next-col-idx new-possible-paths)))))
 
 ;; ----------------------------------------------------------------------------
 ;; PART ONE
@@ -151,4 +135,11 @@
 
   (-> example-diagram
       diagram-rows->matrix
-      run-many-worlds-tachyon-simulation))
+      (run-many-worlds-tachyon-simulation [1 7])))
+
+;; For the solution...
+(comment
+  (-> "input/day07/input.txt"
+      read-file-lines
+      diagram-rows->matrix
+      (run-many-worlds-tachyon-simulation [1 70])))
