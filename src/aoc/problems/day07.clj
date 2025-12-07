@@ -1,5 +1,6 @@
 (ns aoc.problems.day07
-  (:require [clojure.string :as string]))
+  (:require [utils.files :refer [read-file-lines]]
+            [clojure.string :as string]))
 
 (defn- diagram-rows->matrix [diagram-rows]
   (mapv #(string/split % #"") diagram-rows))
@@ -70,3 +71,11 @@
   (-> example-diagram
       diagram-rows->matrix
       run-tachyon-simulation))
+
+;; For the solution...
+(comment
+  (-> "input/day07/input.txt"
+      read-file-lines
+      diagram-rows->matrix
+      run-tachyon-simulation
+      :num-splits))
