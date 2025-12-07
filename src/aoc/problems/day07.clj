@@ -45,37 +45,40 @@
                  num-splits
                  updated-matrix))))))
 
-(defn create-new-timelines
-  [row-idx col-idx timeline-diagram-matrix previous-path]
-  (let [cell       (get-in timeline-diagram-matrix [row-idx col-idx])
-        cell-above (get-in timeline-diagram-matrix [(dec row-idx) col-idx])
-        latest-pos (peek previous-path)]
+(defn next-cells
+  [[row col] diagram]
+  (let [cell (get-in diagram [row col])
+        cell-above (get-in diagram [(dec row) col])]
     (cond
-      (and (= latest-pos [(dec row-idx) col-idx])
-           (= cell "^"))
-      #{(conj previous-path [row-idx (dec col-idx)])
-        (conj previous-path [row-idx (inc col-idx)])}
+      (and (= cell "^") (= [(dec row) col] [(dec row) col]))
+      #{[(inc row) (dec col)]
+        [(inc row) (inc col)]}
 
       (or (= cell-above "S")
-          (= latest-pos [(dec row-idx) col-idx]))
-      #{(conj previous-path [row-idx col-idx])}
+          (= [(dec row) col] [(dec row) col]))
+      #{[(inc row) col]}
 
       :else
-      #{previous-path})))
+      #{})))
 
-(defn run-many-worlds-tachyon-simulation
-  [diagram-matrix [beam-start-row beam-start-col]]
-  (loop [row-idx 1
-         col-idx 0
-         possible-tachyon-paths #{[[beam-start-row beam-start-col]]}]
-    (prn "POSITION:" [row-idx col-idx])
-    (if (>= row-idx (count diagram-matrix))
-      (count possible-tachyon-paths)
-      (let [[next-row-idx next-col-idx] (get-next-cell row-idx col-idx diagram-matrix)
-            new-possible-paths (->> possible-tachyon-paths
-                                    (mapcat (partial create-new-timelines row-idx col-idx diagram-matrix))
-                                    (into #{}))]
-        (recur next-row-idx next-col-idx new-possible-paths)))))
+(defn count-tachyon-paths
+  [diagram [start-row start-col]]
+  (let [rows (count diagram)
+        memo (atom {})]
+
+    (declare count-from)
+
+    (defn count-from [[row col]]
+      (cond
+        (>= row rows) 1
+        (@memo [row col]) (@memo [row col])
+        :else
+        (let [nexts (next-cells [row col] diagram)
+              cnt   (reduce + (map count-from nexts))]
+          (swap! memo assoc [row col] cnt)
+          cnt)))
+
+    (count-from [start-row start-col])))
 
 ;; ----------------------------------------------------------------------------
 ;; PART ONE
@@ -135,11 +138,11 @@
 
   (-> example-diagram
       diagram-rows->matrix
-      (run-many-worlds-tachyon-simulation [1 7])))
+      (count-tachyon-paths [1 7])))
 
 ;; For the solution...
 (comment
   (-> "input/day07/input.txt"
       read-file-lines
       diagram-rows->matrix
-      (run-many-worlds-tachyon-simulation [1 70])))
+      (count-tachyon-paths [1 70])))
