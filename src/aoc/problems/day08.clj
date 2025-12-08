@@ -51,6 +51,7 @@
        (map count)
        (reduce *)))
 
+;; Similar to 'get-all-distances', but returning a different structure
 (defn- all-edges
   [points]
   (let [pts (vec points)
@@ -101,11 +102,8 @@
                ranks ranks
                mst []
                total 0.0]
-          (cond
-            (or (empty? remaining) (= (count mst) (dec n)))
+          (if (or (empty? remaining) (= (count mst) (dec n)))
             {:mst-edges mst :total-weight total}
-
-            :else
             (let [{:keys [u v w] :as e} (first remaining)
                   [parents' ranks' did-union] (uf-union parents ranks u v)]
               (recur (rest remaining)
@@ -198,3 +196,11 @@
 
   ;; 25272
   (final-boxes-x-product example-distances))
+
+;; For the solution...
+(comment
+  (-> "input/day08/input.txt"
+      read-file-lines
+      (->> (mapv #(string/split % #","))
+           (mapv #(mapv Long/parseLong %)))
+      final-boxes-x-product))
