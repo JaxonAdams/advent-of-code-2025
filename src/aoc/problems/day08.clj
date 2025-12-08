@@ -41,6 +41,13 @@
      []
      n-shortest)))
 
+(defn- largest-circuits-product [junction-boxes num-connections]
+  (->> junction-boxes
+       (connect-n-boxes num-connections)
+       (take 3)
+       (map count)
+       (reduce *)))
+
 ;; ----------------------------------------------------------------------------
 ;; PART ONE
 
@@ -67,4 +74,7 @@
                           [984 92 344]
                           [425 690 689]])
 
-  (connect-n-boxes 10 example-distances))
+  (connect-n-boxes 10 example-distances)
+
+  ;; 40
+  (largest-circuits-product example-distances 10))
