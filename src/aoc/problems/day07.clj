@@ -64,21 +64,17 @@
 (defn count-tachyon-paths
   [diagram [start-row start-col]]
   (let [rows (count diagram)
-        memo (atom {})]
-
-    (declare count-from)
-
-    (defn count-from [[row col]]
-      (cond
-        (>= row rows) 1
-        (@memo [row col]) (@memo [row col])
-        :else
-        (let [nexts (next-cells [row col] diagram)
-              cnt   (reduce + (map count-from nexts))]
-          (swap! memo assoc [row col] cnt)
-          cnt)))
-
-    (count-from [start-row start-col])))
+        memo (atom {})
+        count-from-fn (fn count-from [[row col]]
+                        (cond
+                          (>= row rows) 1
+                          (@memo [row col]) (@memo [row col])
+                          :else
+                          (let [nexts (next-cells [row col] diagram)
+                                cnt (reduce + (map count-from nexts))]
+                            (swap! memo assoc [row col] cnt)
+                            cnt)))]
+    (count-from-fn [start-row start-col])))
 
 ;; ----------------------------------------------------------------------------
 ;; PART ONE
@@ -116,7 +112,7 @@
       :num-splits))
 
 ;; ----------------------------------------------------------------------------
-;; PART ONE
+;; PART TWO
 
 (comment
   (def example-diagram [".......S......."
@@ -136,6 +132,7 @@
                         ".^.^.^.^.^...^."
                         "..............."])
 
+  ;; 40
   (-> example-diagram
       diagram-rows->matrix
       (count-tachyon-paths [1 7])))
