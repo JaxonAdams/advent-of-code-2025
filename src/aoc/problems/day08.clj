@@ -1,5 +1,7 @@
 (ns aoc.problems.day08
-  (:require [clojure.set :refer [union]]))
+  (:require [utils.files :refer [read-file-lines]]
+            [clojure.set :refer [union]]
+            [clojure.string :as string]))
 
 (defn- straight-line-distance
   "https://en.wikipedia.org/wiki/Euclidean_distance"
@@ -44,6 +46,7 @@
 (defn- largest-circuits-product [junction-boxes num-connections]
   (->> junction-boxes
        (connect-n-boxes num-connections)
+       (sort-by count >)
        (take 3)
        (map count)
        (reduce *)))
@@ -78,3 +81,11 @@
 
   ;; 40
   (largest-circuits-product example-distances 10))
+
+;; For the solution...
+(comment
+  (-> "input/day08/input.txt"
+      read-file-lines
+      (->> (mapv #(string/split % #","))
+           (mapv #(mapv Long/parseLong %)))
+      (largest-circuits-product 1000)))
