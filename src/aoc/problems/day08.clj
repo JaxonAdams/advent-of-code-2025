@@ -1,4 +1,5 @@
-(ns aoc.problems.day08)
+(ns aoc.problems.day08
+  (:require [clojure.set :refer [union]]))
 
 (defn- straight-line-distance
   "https://en.wikipedia.org/wiki/Euclidean_distance"
@@ -13,6 +14,32 @@
          [(sort [a b]) (straight-line-distance a b)])
        (sort-by second)
        dedupe))
+
+(defn- connect-n-boxes [n junction-boxes]
+  (let [mapped (get-all-distances junction-boxes)
+        n-shortest (take n mapped)]
+    (reduce
+     (fn [circuits [[p1 p2] _]]
+       (let [circuits-with-p1 (filter #(contains? % p1) circuits)
+             circuits-with-p2 (filter #(contains? % p2) circuits)]
+         (cond
+           (and (nil? (first circuits-with-p1)) (nil? (first circuits-with-p2)))
+           (conj circuits #{p1 p2})
+
+           (and (first circuits-with-p1) (first circuits-with-p2))
+           (conj (remove #(or (contains? % p1) (contains? % p2)) circuits)
+                 (union (first circuits-with-p1) (first circuits-with-p2)))
+
+           (first circuits-with-p1)
+           (conj (remove #(contains? % p1) circuits)
+                 (union (first circuits-with-p1) #{p1 p2}))
+
+           (first circuits-with-p2)
+           (conj (remove #(contains? % p2) circuits)
+                 (union (first circuits-with-p2) #{p1 p2})))))
+
+     []
+     n-shortest)))
 
 ;; ----------------------------------------------------------------------------
 ;; PART ONE
@@ -40,5 +67,4 @@
                           [984 92 344]
                           [425 690 689]])
 
-  (->> example-distances
-       get-all-distances))
+  (connect-n-boxes 10 example-distances))
