@@ -47,19 +47,11 @@
 
 (defn next-cells
   [[row col] diagram]
-  (let [cell (get-in diagram [row col])
-        cell-above (get-in diagram [(dec row) col])]
-    (cond
-      (and (= cell "^") (= [(dec row) col] [(dec row) col]))
+  (let [cell (get-in diagram [row col])]
+    (if (= cell "^")
       #{[(inc row) (dec col)]
         [(inc row) (inc col)]}
-
-      (or (= cell-above "S")
-          (= [(dec row) col] [(dec row) col]))
-      #{[(inc row) col]}
-
-      :else
-      #{})))
+      #{[(inc row) col]})))
 
 (defn count-tachyon-paths
   [diagram [start-row start-col]]
@@ -71,7 +63,7 @@
                           (@memo [row col]) (@memo [row col])
                           :else
                           (let [nexts (next-cells [row col] diagram)
-                                cnt (reduce + (map count-from nexts))]
+                                cnt (reduce + 0 (map count-from nexts))]
                             (swap! memo assoc [row col] cnt)
                             cnt)))]
     (count-from-fn [start-row start-col])))
