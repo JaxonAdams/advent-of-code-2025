@@ -18,64 +18,51 @@
        first
        :area))
 
-(defn- point-on-segment? [[px py] [x1 y1] [x2 y2]]
-  (let [dx (- x2 x1)
-        dy (- y2 y1)
-        vx  (- px x1)
-        vy  (- py y1)
-        cross (- (* dx vy) (* dy vx))]
-    (and (== cross 0.0)
-         (<= (min x1 x2) px (max x1 x2))
-         (<= (min y1 y2) py (max y1 y2)))))
+(defn- full-rect-area [x1 y1 x2 y2]
+  (* (inc (abs (- x2 x1))) (inc (abs (- y2 y1)))))
 
-(defn- point-in-polygon? [[px py] polygon]
-  (let [n (count polygon)]
-    (loop [i 0
-           j (dec n)
-           inside false]
-      (if (= i n)
-        inside
-        (let [[x1 y1] (nth polygon i)
-              [x2 y2] (nth polygon j)
-              on-edge (or (point-on-segment? [px py] [x1 y1] [x2 y2])
-                          (point-on-segment? [px py] [x2 y2] [x1 y1]))
-              yi (> y1 py)
-              yj (> y2 py)]
-          (cond
-            on-edge true
-            (not= yi yj)
-            (let [x-intersect (+ x1 (* (- x2 x1) (/ (- py y1) (- y2 y1))))]
-              (if (< px x-intersect)
-                (recur (inc i) i (not inside))
-                (recur (inc i) i inside)))
-            :else
-            (recur (inc i) i inside)))))))
+(defn- manhattan-distance [[x1 y1] [x2 y2]]
+  (+ (abs (- x1 x2)) (abs (- y1 y2))))
 
-(defn- memoized-point-in-polygon
-  [polygon]
-  (let [f (fn [point] (point-in-polygon? point polygon))]
-    (memoize f)))
+(defn- intersects? [edges min-x min-y max-x max-y]
+  (some (fn [{:keys [x1 y1 x2 y2]}]
+          (let [[i-min-x i-max-x] (sort [x1 x2])
+                [i-min-y i-max-y] (sort [y1 y2])]
+            (and (< min-x i-max-x)
+                 (> max-x i-min-x)
+                 (< min-y i-max-y)
+                 (> max-y i-min-y))))
+        edges))
 
-(defn- rect-points [[[x1 y1] [x2 y2]]]
-  (let [corners [[x1 y1] [x1 y2] [x2 y1] [x2 y2]]
-        edge-midpoints [[(/ (+ x1 x2) 2) y1]
-                        [(/ (+ x1 x2) 2) y2]
-                        [x1 (/ (+ y1 y2) 2)]
-                        [x2 (/ (+ y1 y2) 2)]]
-        center [[(/ (+ x1 x2) 2) (/ (+ y1 y2) 2)]]]
-    (concat corners edge-midpoints center)))
+(defn- largest-rect-in-polygon [polygon]
+  (let [[init-x init-y] (first polygon)
+        [last-x last-y] (last polygon)
+        edges (conj (mapv (fn [[from to]]
+                            {:x1 (first from) :y1 (second from)
+                             :x2 (first to) :y2 (second to)})
+                          (partition 2 1 polygon))
+                    {:x1 init-x :y1 init-y :x2 last-x :y2 last-y})
+        red-tiles (vec (mapcat (fn [[from to]] [from to])
+                               (partition 2 1 polygon)))]
 
-(defn- rect-in-polygon? [rect inside?]
-  (every? inside? (rect-points rect)))
-
-(defn- largest-rect-in-polygon [red-tile-locations]
-  (let [inside? (memoized-point-in-polygon red-tile-locations)]
-    (->> red-tile-locations
-         possible-rects-red-corners
-         (filter #(-> % :corners (rect-in-polygon? inside?)))
-         (sort-by :area >)
-         first
-         :area)))
+    (reduce
+     (fn [result [f-idx t-idx]]
+       (let [from-tile (nth red-tiles f-idx)
+             to-tile (nth red-tiles t-idx)
+             [min-x max-x] (sort [(first from-tile) (first to-tile)])
+             [min-y max-y] (sort [(second from-tile) (second to-tile)])
+             m-dist (manhattan-distance from-tile to-tile)]
+         (if (> (* m-dist m-dist) result)
+           (if-not (intersects? edges min-x min-y max-x max-y)
+             (let [area (full-rect-area (first from-tile) (second from-tile)
+                                        (first to-tile) (second to-tile))]
+               (max result area))
+             result)
+           result)))
+     0
+     (for [f-idx (range (dec (count red-tiles)))
+           t-idx (range f-idx (count red-tiles))]
+       [f-idx t-idx]))))
 
 ;; ----------------------------------------------------------------------------
 ;; PART ONE
@@ -124,8 +111,6 @@
   (largest-rect-in-polygon example-red-tile-locations))
 
 ;; For the solution...
-;; NOT 4604012490
-;; NOT 4603079700
 (comment
   (->> "input/day09/input.txt"
        read-file-lines
