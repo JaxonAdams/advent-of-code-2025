@@ -1,4 +1,6 @@
-(ns aoc.problems.day09)
+(ns aoc.problems.day09
+  (:require [utils.files :refer [read-file-lines]]
+            [clojure.string :refer [split]]))
 
 (defn- rect-area [[x1 y1] [x2 y2]]
   (abs (* (inc (- x2 x1)) (inc (- y2 y1)))))
@@ -38,3 +40,11 @@
 
   ;; 50
   (largest-rect-red-corners example-red-tile-locations))
+
+;; For the solution...
+(comment
+  (->> "input/day09/input.txt"
+       read-file-lines
+       (map #(split % #","))
+       (map #(map Long/parseLong %))
+       largest-rect-red-corners))
