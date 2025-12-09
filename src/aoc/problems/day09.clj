@@ -60,7 +60,10 @@
 (defn- largest-rect-in-polygon [red-tile-locations]
   (->> red-tile-locations
        possible-rects-red-corners
-       (filter #(-> % :corners (rect-in-polygon? red-tile-locations)))))
+       (filter #(-> % :corners (rect-in-polygon? red-tile-locations)))
+       (sort-by :area >)
+       first
+       :area))
 
 ;; ----------------------------------------------------------------------------
 ;; PART ONE
@@ -113,4 +116,5 @@
       :corners
       (rect-in-polygon? example-red-tile-locations))
 
+  ;; 24
   (largest-rect-in-polygon example-red-tile-locations))
