@@ -18,13 +18,18 @@
        first
        :area))
 
-(defn- midpoint [[r1 c1] [r2 c2]]
-  [(/ (+ r1 r2) 2.0)
-   (/ (+ c1 c2) 2.0)])
+(defn- point-on-segment? [[px py] [x1 y1] [x2 y2]]
+  (let [dx (- x2 x1)
+        dy (- y2 y1)
+        vx  (- px x1)
+        vy  (- py y1)
+        cross (- (* dx vy) (* dy vx))]
+    (and (== cross 0.0)
+         (<= (min x1 x2) px (max x1 x2))
+         (<= (min y1 y2) py (max y1 y2)))))
 
-(defn rect-in-polygon? [[p1 p2] polygon]
-  (let [[px py] (midpoint p1 p2)
-        n (count polygon)]
+(defn- point-in-polygon? [[px py] polygon]
+  (let [n (count polygon)]
     (loop [i 0
            j (dec n)
            inside false]
@@ -32,10 +37,30 @@
         inside
         (let [[x1 y1] (nth polygon i)
               [x2 y2] (nth polygon j)
-              intersect (and (not= y1 y2)
-                             (<= (min y1 y2) py (max y1 y2))
-                             (> px (+ x1 (* (- x2 x1) (/ (- py y1) (- y2 y1))))))]
-          (recur (inc i) i (if intersect (not inside) inside)))))))
+              on-edge (or (point-on-segment? [px py] [x1 y1] [x2 y2])
+                          (point-on-segment? [px py] [x2 y2] [x1 y1]))
+              yi (> y1 py)
+              yj (> y2 py)]
+          (cond
+            on-edge true
+            (not= yi yj)
+            (let [x-intersect (+ x1 (* (- x2 x1) (/ (- py y1) (- y2 y1))))]
+              (if (< px x-intersect)
+                (recur (inc i) i (not inside))
+                (recur (inc i) i inside)))
+            :else
+            (recur (inc i) i inside)))))))
+
+(defn- rect-in-polygon? [[[x1 y1] [x2 y2]] polygon]
+  (let [p1-opposite [x1 y2]
+        p2-opposite [x2 y1]]
+    (and (point-in-polygon? p1-opposite polygon)
+         (point-in-polygon? p2-opposite polygon))))
+
+(defn- largest-rect-in-polygon [red-tile-locations]
+  (->> red-tile-locations
+       possible-rects-red-corners
+       (filter #(-> % :corners (rect-in-polygon? red-tile-locations)))))
 
 ;; ----------------------------------------------------------------------------
 ;; PART ONE
@@ -84,6 +109,8 @@
 
   (-> example-red-tile-locations
       possible-rects-red-corners
-      first
+      (nth 3)
       :corners
-      (rect-in-polygon? example-red-tile-locations)))
+      (rect-in-polygon? example-red-tile-locations))
+
+  (largest-rect-in-polygon example-red-tile-locations))
