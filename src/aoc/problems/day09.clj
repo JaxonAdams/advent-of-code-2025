@@ -51,19 +51,31 @@
             :else
             (recur (inc i) i inside)))))))
 
-(defn- rect-in-polygon? [[[x1 y1] [x2 y2]] polygon]
-  (let [p1-opposite [x1 y2]
-        p2-opposite [x2 y1]]
-    (and (point-in-polygon? p1-opposite polygon)
-         (point-in-polygon? p2-opposite polygon))))
+(defn- memoized-point-in-polygon
+  [polygon]
+  (let [f (fn [point] (point-in-polygon? point polygon))]
+    (memoize f)))
+
+(defn- rect-points [[[x1 y1] [x2 y2]]]
+  (let [corners [[x1 y1] [x1 y2] [x2 y1] [x2 y2]]
+        edge-midpoints [[(/ (+ x1 x2) 2) y1]
+                        [(/ (+ x1 x2) 2) y2]
+                        [x1 (/ (+ y1 y2) 2)]
+                        [x2 (/ (+ y1 y2) 2)]]
+        center [[(/ (+ x1 x2) 2) (/ (+ y1 y2) 2)]]]
+    (concat corners edge-midpoints center)))
+
+(defn- rect-in-polygon? [rect inside?]
+  (every? inside? (rect-points rect)))
 
 (defn- largest-rect-in-polygon [red-tile-locations]
-  (->> red-tile-locations
-       possible-rects-red-corners
-       (filter #(-> % :corners (rect-in-polygon? red-tile-locations)))
-       (sort-by :area >)
-       first
-       :area))
+  (let [inside? (memoized-point-in-polygon red-tile-locations)]
+    (->> red-tile-locations
+         possible-rects-red-corners
+         (filter #(-> % :corners (rect-in-polygon? inside?)))
+         (sort-by :area >)
+         first
+         :area)))
 
 ;; ----------------------------------------------------------------------------
 ;; PART ONE
@@ -108,13 +120,15 @@
                       [10 10]
                       [0 10]])
 
-  (rect-in-polygon? [[0 0] [1 10]] simple-square)
-
-  (-> example-red-tile-locations
-      possible-rects-red-corners
-      (nth 3)
-      :corners
-      (rect-in-polygon? example-red-tile-locations))
-
   ;; 24
   (largest-rect-in-polygon example-red-tile-locations))
+
+;; For the solution...
+;; NOT 4604012490
+;; NOT 4603079700
+(comment
+  (->> "input/day09/input.txt"
+       read-file-lines
+       (map #(split % #","))
+       (map #(map Long/parseLong %))
+       largest-rect-in-polygon))
