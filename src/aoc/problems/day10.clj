@@ -52,7 +52,7 @@
           (vec initial-state)
           (flatten buttons)))
 
-(defn- min-btn-presses [desired-state-diagram buttons n-combos update-fn initial-value]
+(defn- min-btn-presses-for-lights [desired-state-diagram buttons n-combos update-fn initial-value]
   (let [initial-state (repeat (count desired-state-diagram) initial-value)
         button-combos (button-press-combinations buttons n-combos)]
     (->> button-combos
@@ -65,14 +65,74 @@
   (let [instructions (map parse-instruction instruction-strs)]
     (->> instructions
          (map (fn [{:keys [light-diagram button-schematics]}]
-                (min-btn-presses light-diagram button-schematics 1 not false)))
+                (min-btn-presses-for-lights light-diagram button-schematics 1 not false)))
          (reduce +))))
+
+(defn press-vector
+  [dim button]
+  (reduce (fn [v idx] (update v idx inc))
+          (vec (repeat dim 0))
+          button))
+
+(defn max-presses
+  [target effect]
+  (let [quotients (keep-indexed
+                   (fn [i e]
+                     (when (pos? e)
+                       (quot (nth target i) e)))
+                   effect)]
+    (if (seq quotients)
+      (apply min quotients)
+      0)))
+
+(defn enumerate-half
+  [target btn-effects]
+  (let [n (count btn-effects)
+        D (count target)]
+    (letfn [(recur-gen [i]
+              (if (= i n)
+                {(vec (repeat D 0)) 0}
+                (let [eff (nth btn-effects i)
+                      m   (max-presses target eff)
+                      rest-map (recur-gen (inc i))]
+                  (apply merge-with
+                         min
+                         (for [k (range (inc m))]
+                           (let [delta (mapv #(* k %) eff)]
+                             (into {}
+                                   (for [[vec cost] rest-map
+                                         :let [new-vec (mapv + vec delta)
+                                               new-cost (+ cost k)]
+                                         :when (every? (fn [[a b]] (<= a b))
+                                                       (map vector new-vec target))]
+                                     [new-vec new-cost]))))))))]
+      (recur-gen 0))))
+
+(defn min-btn-presses
+  [target buttons]
+  (let [D (count target)
+        effects (mapv (partial press-vector D) buttons)
+        n (count effects)
+        half (quot n 2)
+        left-effects  (subvec effects 0 half)
+        right-effects (subvec effects half n)
+        left-map  (enumerate-half target left-effects)
+        right-map (enumerate-half target right-effects)]
+    (reduce (fn [best [lvec lcost]]
+              (let [need (mapv - target lvec)
+                    rcost (get right-map need)]
+                (cond
+                  (nil? rcost) best
+                  (nil? best) (+ lcost rcost)
+                  :else (min best (+ lcost rcost)))))
+            nil
+            left-map)))
 
 (defn- fewest-presses-required-joltage-config [instruction-strs]
   (let [instructions (map parse-instruction instruction-strs)]
     (->> instructions
          (map (fn [{:keys [joltage-diagram button-schematics]}]
-                (min-btn-presses joltage-diagram button-schematics (apply max joltage-diagram) inc 0)))
+                (min-btn-presses joltage-diagram button-schematics)))
          (reduce +))))
 
 ;; ----------------------------------------------------------------------------
@@ -89,11 +149,11 @@
   (button-press-combinations [[3] [1 3] [2] [2 3] [0 2] [0 1]] 1)
 
   ;; 2
-  (min-btn-presses [false true true false] [[3] [1 3] [2] [2 3] [0 2] [0 1]] 1 not false)
+  (min-btn-presses-for-lights [false true true false] [[3] [1 3] [2] [2 3] [0 2] [0 1]] 1 not false)
   ;; 3
-  (min-btn-presses [false false false true false] [[0 2 3 4] [2 3] [0 4] [0 1 2] [1 2 3 4]] 1 not false)
+  (min-btn-presses-for-lights [false false false true false] [[0 2 3 4] [2 3] [0 4] [0 1 2] [1 2 3 4]] 1 not false)
   ;; 2
-  (min-btn-presses [false true true true false true] [[0 1 2 3 4] [0 3 4] [0 1 2 4 5] [1 2]] 1 not false)
+  (min-btn-presses-for-lights [false true true true false true] [[0 1 2 3 4] [0 3 4] [0 1 2 4 5] [1 2]] 1 not false)
 
   (def example-instructions ["[.##.] (3) (1,3) (2) (2,3) (0,2) (0,1) {3,5,4,7}"
                              "[...#.] (0,2,3,4) (2,3) (0,4) (0,1,2) (1,2,3,4) {7,5,12,7,2}"
@@ -114,7 +174,7 @@
 (comment
 
   ;; 10
-  (min-btn-presses [3 5 4 7] [[3] [1 3] [2] [2 3] [0 2] [0 1]] 7 inc 0)
+  (min-btn-presses [3 5 4 7] [[3] [1 3] [2] [2 3] [0 2] [0 1]])
 
   ;; 33
   (fewest-presses-required-joltage-config example-instructions))
