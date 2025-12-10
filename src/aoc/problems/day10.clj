@@ -24,31 +24,32 @@
     {:light-diagram indicator-light-diagram
      :button-schematics button-wiring-schematics}))
 
-(defn- button-press-combinations [buttons]
-  (->> buttons
-       count
-       inc
-       (range 1)
-       (mapcat #(combo/combinations buttons %))))
+(defn- button-press-combinations [buttons n]
+  (let [with-n-repeats (mapv (partial repeat n) buttons)]
+    (->> with-n-repeats
+         count
+         inc
+         (range 1)
+         (mapcat #(combo/combinations with-n-repeats %)))))
 
-(defn- press-buttons [initial-light-diagram buttons]
-  (reduce (fn [light-diagram-updated light-idx]
-            (->> (nth light-diagram-updated light-idx)
+(defn- press-buttons [initial-state buttons]
+  (reduce (fn [new-state diagram-idx]
+            (->> (nth new-state diagram-idx)
                  not
-                 (assoc light-diagram-updated light-idx)))
-          (vec initial-light-diagram)
+                 (assoc new-state diagram-idx)))
+          (vec initial-state)
           (flatten buttons)))
 
-(defn- min-btn-presses [light-diagram buttons]
-  (let [initial-state (repeat (count light-diagram) false)
-        button-combos (button-press-combinations buttons)]
+(defn- min-btn-presses [desired-state-diagram buttons]
+  (let [initial-state (repeat (count desired-state-diagram) false)
+        button-combos (button-press-combinations buttons 1)]
     (->> button-combos
-         (filter #(= light-diagram (press-buttons initial-state %)))
+         (filter #(= desired-state-diagram (press-buttons initial-state %)))
          (sort-by count)
          first
          count)))
 
-(defn- fewest-presses-required [instruction-strs]
+(defn- fewest-presses-required-light-config [instruction-strs]
   (let [instructions (map parse-instruction instruction-strs)]
     (->> instructions
          (map (fn [{:keys [light-diagram button-schematics]}]
@@ -66,7 +67,7 @@
 
   (press-buttons [false false false false false] [[0 4] [0 1 2] [1 2 3 4]])
 
-  (button-press-combinations [[3] [1 3] [2] [2 3] [0 2] [0 1]])
+  (button-press-combinations [[3] [1 3] [2] [2 3] [0 2] [0 1]] 1)
 
   ;; 2
   (min-btn-presses [false true true false] [[3] [1 3] [2] [2 3] [0 2] [0 1]])
@@ -80,11 +81,15 @@
                              "[.###.#] (0,1,2,3,4) (0,3,4) (0,1,2,4,5) (1,2) {10,11,11,5,10,5}"])
 
   ;; 7
-  (fewest-presses-required example-instructions))
+  (fewest-presses-required-light-config example-instructions))
 
 ;; For the solution...
 (comment
   (-> "input/day10/input.txt"
       read-file-lines
-      fewest-presses-required))
+      fewest-presses-required-light-config))
 
+;; ----------------------------------------------------------------------------
+;; PART TWO
+
+(comment)
