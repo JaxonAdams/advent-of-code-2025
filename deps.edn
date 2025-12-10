@@ -1,5 +1,6 @@
 {:paths ["src" "test"]
- :deps {org.clojure/clojure {:mvn/version "1.12.1"}}
+ :deps {org.clojure/clojure {:mvn/version "1.12.1"}
+        org.clojure/math.combinatorics {:mvn/version "0.3.0"}}
 
  :aliases
  {:nrepl {:extra-deps {nrepl/nrepl {:mvn/version "1.0.0"}
