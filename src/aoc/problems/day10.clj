@@ -178,3 +178,9 @@
 
   ;; 33
   (fewest-presses-required-joltage-config example-instructions))
+
+;; For the solution...
+(comment
+  (-> "input/day10/input.txt"
+      read-file-lines
+      fewest-presses-required-joltage-config))
