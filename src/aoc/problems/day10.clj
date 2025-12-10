@@ -3,6 +3,14 @@
             [clojure.math.combinatorics :as combo]
             [utils.files :refer [read-file-lines]]))
 
+(defn- parse-joltage-diagram [diagram-str]
+  (-> diagram-str
+      rest
+      butlast
+      (->> (apply str))
+      (string/split #",")
+      (->> (map Integer/parseInt))))
+
 (defn- parse-indicator-light-diagram [diagram-str]
   (->> diagram-str
        rest
@@ -20,9 +28,11 @@
 (defn- parse-instruction [instruction]
   (let [parts (string/split instruction #" ")
         indicator-light-diagram (parse-indicator-light-diagram (first parts))
-        button-wiring-schematics (parse-button-wiring-schematics (-> parts rest butlast))]
+        button-wiring-schematics (parse-button-wiring-schematics (-> parts rest butlast))
+        joltage-diagram (parse-joltage-diagram (last parts))]
     {:light-diagram indicator-light-diagram
-     :button-schematics button-wiring-schematics}))
+     :button-schematics button-wiring-schematics
+     :joltage-diagram joltage-diagram}))
 
 (defn- button-press-combinations [buttons n]
   (let [with-n-repeats (mapv (partial repeat n) buttons)]
