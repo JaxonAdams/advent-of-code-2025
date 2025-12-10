@@ -47,6 +47,13 @@
          first
          count)))
 
+(defn- fewest-presses-required [instruction-strs]
+  (let [instructions (map parse-instruction instruction-strs)]
+    (->> instructions
+         (map (fn [{:keys [light-diagram button-schematics]}]
+                (min-btn-presses light-diagram button-schematics)))
+         (reduce +))))
+
 ;; ----------------------------------------------------------------------------
 ;; PART ONE
 
@@ -65,5 +72,12 @@
   ;; 3
   (min-btn-presses [false false false true false] [[0 2 3 4] [2 3] [0 4] [0 1 2] [1 2 3 4]])
   ;; 2
-  (min-btn-presses [false true true true false true] [[0 1 2 3 4] [0 3 4] [0 1 2 4 5] [1 2]]))
+  (min-btn-presses [false true true true false true] [[0 1 2 3 4] [0 3 4] [0 1 2 4 5] [1 2]])
+
+  (def example-instructions ["[.##.] (3) (1,3) (2) (2,3) (0,2) (0,1) {3,5,4,7}"
+                             "[...#.] (0,2,3,4) (2,3) (0,4) (0,1,2) (1,2,3,4) {7,5,12,7,2}"
+                             "[.###.#] (0,1,2,3,4) (0,3,4) (0,1,2,4,5) (1,2) {10,11,11,5,10,5}"])
+
+  ;; 7
+  (fewest-presses-required example-instructions))
 
