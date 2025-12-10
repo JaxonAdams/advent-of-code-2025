@@ -1,6 +1,7 @@
 (ns aoc.problems.day10
   (:require [clojure.string :as string]
-            [clojure.math.combinatorics :as combo]))
+            [clojure.math.combinatorics :as combo]
+            [utils.files :refer [read-file-lines]]))
 
 (defn- parse-indicator-light-diagram [diagram-str]
   (->> diagram-str
@@ -80,4 +81,10 @@
 
   ;; 7
   (fewest-presses-required example-instructions))
+
+;; For the solution...
+(comment
+  (-> "input/day10/input.txt"
+      read-file-lines
+      fewest-presses-required))
 
