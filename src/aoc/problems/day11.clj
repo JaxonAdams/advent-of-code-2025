@@ -22,18 +22,20 @@
               (visited current) 0
               :else
               (->> (get graph current [])
-                   (map #(dfs % (conj visited current)))
+                   (pmap #(dfs % (conj visited current)))
                    (reduce +))))]
     (dfs start #{})))
 
 (defn count-paths-via-nodes [graph start end via-nodes]
-  (let [[node1 node2] via-nodes]
-    (+ (* (count-simple-paths graph start node1)
-          (count-simple-paths graph node1 node2)
-          (count-simple-paths graph node2 end))
-       (* (count-simple-paths graph start node2)
-          (count-simple-paths graph node2 node1)
-          (count-simple-paths graph node1 end)))))
+  (let [[node1 node2] via-nodes
+        futures [(future (count-simple-paths graph start node1))
+                 (future (count-simple-paths graph node1 node2))
+                 (future (count-simple-paths graph node2 end))
+                 (future (count-simple-paths graph start node2))
+                 (future (count-simple-paths graph node2 node1))
+                 (future (count-simple-paths graph node1 end))]
+        [p1 p2 p3 p4 p5 p6] (map deref futures)]
+    (+ (* p1 p2 p3) (* p4 p5 p6))))
 
 ;; ----------------------------------------------------------------------------
 ;; PART ONE
@@ -85,14 +87,13 @@
                       "hhh: out"])
 
   ;; 2
-  ; (-> example-map-2
-  ;     parse-graph
-  ;     (count-simple-paths :svr))
-  )
+  (-> example-map-2
+      parse-graph
+      (count-paths-via-nodes :svr :out [:dac :fft])))
 
 ;; For the solution...
-; (comment
-;   (-> "input/day11/input.txt"
-;       read-file-lines
-;       parse-graph
-;       (count-simple-paths :svr)))
+(comment
+  (-> "input/day11/input.txt"
+      read-file-lines
+      parse-graph
+      (count-paths-via-nodes :svr :out [:dac :fft])))
