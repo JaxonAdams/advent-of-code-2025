@@ -15,37 +15,25 @@
    {}
    map-lines))
 
-(defn- visits-dac-and-fft? [path]
-  (let [nodes (into #{} path)]
-    (and
-     (contains? nodes :dac)
-     (contains? nodes :fft))))
+(defn count-simple-paths [graph start end]
+  (letfn [(dfs [current visited]
+            (cond
+              (= current end) 1
+              (visited current) 0
+              :else
+              (->> (get graph current [])
+                   (map #(dfs % (conj visited current)))
+                   (reduce +))))]
+    (dfs start #{})))
 
-(defn- dfs-find-paths
-  [graph start target pred?]
-  (let [memo (atom {})]
-    (letfn [(dfs [current visited current-path]
-              (let [state [current visited]]
-                (if-let [cached (@memo state)]
-                  cached
-                  (let [result
-                        (cond
-                          (= current target)
-                          (if (pred? current-path) 1 0)
-
-                          (visited current)
-                          0
-
-                          :else
-                          (->> (get graph current [])
-                               (map #(dfs % (conj visited current) (conj current-path %)))
-                               (reduce +)))]
-                    (swap! memo assoc state result)
-                    result))))]
-      (dfs start #{} [start]))))
-
-(defn count-paths [graph start pred?]
-  (dfs-find-paths graph start :out pred?))
+(defn count-paths-via-nodes [graph start end via-nodes]
+  (let [[node1 node2] via-nodes]
+    (+ (* (count-simple-paths graph start node1)
+          (count-simple-paths graph node1 node2)
+          (count-simple-paths graph node2 end))
+       (* (count-simple-paths graph start node2)
+          (count-simple-paths graph node2 node1)
+          (count-simple-paths graph node1 end)))))
 
 ;; ----------------------------------------------------------------------------
 ;; PART ONE
@@ -68,14 +56,14 @@
   ;; 5
   (-> example-map
       parse-graph
-      (count-paths :you identity)))
+      (count-simple-paths :you :out)))
 
 ;; For the solution...
 (comment
   (-> "input/day11/input.txt"
       read-file-lines
       parse-graph
-      (count-paths :you identity)))
+      (count-simple-paths :you :out)))
 
 ;; ----------------------------------------------------------------------------
 ;; PART TWO
@@ -97,13 +85,14 @@
                       "hhh: out"])
 
   ;; 2
-  (-> example-map-2
-      parse-graph
-      (count-paths :svr visits-dac-and-fft?)))
+  ; (-> example-map-2
+  ;     parse-graph
+  ;     (count-simple-paths :svr))
+  )
 
 ;; For the solution...
-(comment
-  (-> "input/day11/input.txt"
-      read-file-lines
-      parse-graph
-      (count-paths :svr visits-dac-and-fft?)))
+; (comment
+;   (-> "input/day11/input.txt"
+;       read-file-lines
+;       parse-graph
+;       (count-simple-paths :svr)))
