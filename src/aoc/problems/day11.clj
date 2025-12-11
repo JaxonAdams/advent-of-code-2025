@@ -1,5 +1,6 @@
 (ns aoc.problems.day11
-  (:require [clojure.string :as string]))
+  (:require [clojure.string :as string]
+            [utils.files :refer [read-file-lines]]))
 
 (defn- parse-graph [map-lines]
   (reduce
@@ -43,5 +44,12 @@
   (parse-graph example-map)
 
   (-> example-map
+      parse-graph
+      (dfs-count-paths :you :out)))
+
+;; For the solution...
+(comment
+  (-> "input/day11/input.txt"
+      read-file-lines
       parse-graph
       (dfs-count-paths :you :out)))
