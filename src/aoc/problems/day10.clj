@@ -127,21 +127,20 @@
 
 (defn combine-maps
   [map1 map2 target]
-  (let [combinations
-        (for [[v1 c1] map1
-              [v2 c2] map2
-              :let [new-v (mapv + v1 v2)
-                    new-c (+ c1 c2)]
-              :when (every? (fn [[a b]] (<= a b)) (map vector new-v target))]
-          [new-v new-c])]
-    (reduce
-     (fn [acc [vec cost]]
-       (update acc vec (fn [old-cost]
-                         (if old-cost
-                           (min old-cost cost)
-                           cost))))
-     {}
-     combinations)))
+  (persistent!
+   (reduce
+    (fn [t-map [v1 c1]]
+      (reduce
+       (fn [acc-t-map [v2 c2]]
+         (let [new-v (mapv + v1 v2)
+               new-c (+ c1 c2)]
+           (if (every? (fn [[a b]] (<= a b)) (map vector new-v target))
+             (update-transient-map acc-t-map new-v new-c)
+             acc-t-map)))
+       t-map
+       map2))
+    (transient {})
+    map1)))
 
 (defn min-btn-presses
   [target buttons]
@@ -231,6 +230,9 @@
 
   ;; 33
   (fewest-presses-required-joltage-config example-instructions)
+
+  (fewest-presses-required-joltage-config
+   ["[#....#...] (3,5,6,8) (1,6) (1,2,4,7,8) (3,4,5,7,8) (0,2,4,5,6,8) (0,1,3) (1,2,6,7,8) (0,5) (0,1,4,6,8) {42,46,38,34,52,33,33,36,61}"])
 
   (fewest-presses-required-joltage-config
    ["[####.###.#] (0,1,2,8,9) (0,2,9) (0,1,4,5,9) (0,3,7,9) (1,4,5) (1,2,8,9) (0,3,5,6,7,8) (0,2,5,7,9) (4,5,6) (2,3,4,7,8) {177,39,175,23,41,176,22,157,28,186}"]))
