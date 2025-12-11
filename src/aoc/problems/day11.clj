@@ -14,6 +14,16 @@
    {}
    map-lines))
 
+(defn dfs-count-paths
+  [graph start target]
+  (letfn [(dfs [current visited]
+            (cond (= current target) 1
+                  (visited current) 0
+                  :else (->> (get graph current [])
+                             (map #(dfs % (conj visited current)))
+                             (reduce +))))]
+    (dfs start #{})))
+
 ;; ----------------------------------------------------------------------------
 ;; PART ONE
 
@@ -30,4 +40,8 @@
                     "hhh: ccc fff iii"
                     "iii: out"])
 
-  (parse-graph example-map))
+  (parse-graph example-map)
+
+  (-> example-map
+      parse-graph
+      (dfs-count-paths :you :out)))
