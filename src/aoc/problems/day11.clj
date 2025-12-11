@@ -26,16 +26,40 @@
                    (reduce +))))]
     (dfs start #{})))
 
-(defn count-paths-via-nodes [graph start end via-nodes]
-  (let [[node1 node2] via-nodes
-        futures [(future (count-simple-paths graph start node1))
-                 (future (count-simple-paths graph node1 node2))
-                 (future (count-simple-paths graph node2 end))
-                 (future (count-simple-paths graph start node2))
-                 (future (count-simple-paths graph node2 node1))
-                 (future (count-simple-paths graph node1 end))]
-        [p1 p2 p3 p4 p5 p6] (map deref futures)]
-    (+ (* p1 p2 p3) (* p4 p5 p6))))
+(defn count-paths-floyd-warshall [graph]
+  (let [all-nodes (into (set (keys graph))
+                        (mapcat val graph))
+        nodes (vec all-nodes)
+        node-to-idx (zipmap nodes (range))
+        n (count nodes)
+        ;; Initialize adjacency matrix
+        matrix (reduce
+                (fn [m [from tos]]
+                  (let [from-idx (node-to-idx from)]
+                    (reduce
+                     (fn [m2 to]
+                       (let [to-idx (node-to-idx to)]
+                         (assoc-in m2 [from-idx to-idx] 1)))
+                     m tos)))
+                (vec (repeat n (vec (repeat n 0))))
+                graph)]
+    ;; Floyd-Warshall with path counting
+    (loop [d matrix, k 0]
+      (if (< k n)
+        (recur
+         (reduce
+          (fn [d2 i]
+            (reduce
+             (fn [d3 j]
+               (update-in d3 [i j] + (* (get-in d2 [i k]) (get-in d2 [k j]))))
+             d2 (range n)))
+          d (range n))
+         (inc k))
+        ;; Return function to get path count between nodes
+        (fn [start end]
+          (let [start-idx (node-to-idx start)
+                end-idx (node-to-idx end)]
+            (get-in d [start-idx end-idx] 0)))))))
 
 ;; ----------------------------------------------------------------------------
 ;; PART ONE
@@ -87,13 +111,16 @@
                       "hhh: out"])
 
   ;; 2
-  (-> example-map-2
-      parse-graph
-      (count-paths-via-nodes :svr :out [:dac :fft])))
+  (let [graph (parse-graph example-map-2)
+        path-counter (count-paths-floyd-warshall graph)]
+    (* (path-counter :svr :fft)
+       (path-counter :fft :dac)
+       (path-counter :dac :out))))
 
 ;; For the solution...
 (comment
-  (-> "input/day11/input.txt"
-      read-file-lines
-      parse-graph
-      (count-paths-via-nodes :svr :out [:dac :fft])))
+  (let [graph (-> "input/day11/input.txt" read-file-lines parse-graph)
+        path-counter (count-paths-floyd-warshall graph)]
+    (* (path-counter :svr :fft)
+       (path-counter :fft :dac)
+       (path-counter :dac :out))))
