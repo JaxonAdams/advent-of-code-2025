@@ -22,7 +22,7 @@
               (visited current) 0
               :else
               (->> (get graph current [])
-                   (pmap #(dfs % (conj visited current)))
+                   (map #(dfs % (conj visited current)))
                    (reduce +))))]
     (dfs start #{})))
 
