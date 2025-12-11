@@ -15,15 +15,19 @@
    {}
    map-lines))
 
-(defn dfs-count-paths
+(defn- dfs-find-paths
   [graph start target]
-  (letfn [(dfs [current visited]
-            (cond (= current target) 1
-                  (visited current) 0
+  (letfn [(dfs [current visited current-path]
+            (cond (= current target) [current-path]
+                  (visited current) []
                   :else (->> (get graph current [])
-                             (map #(dfs % (conj visited current)))
-                             (reduce +))))]
-    (dfs start #{})))
+                             (map #(dfs % (conj visited current) (conj current-path %)))
+                             (reduce concat))))]
+    (dfs start #{} [])))
+
+(defn count-paths [graph start]
+  (->> (dfs-find-paths graph start :out)
+       count))
 
 ;; ----------------------------------------------------------------------------
 ;; PART ONE
@@ -43,13 +47,38 @@
 
   (parse-graph example-map)
 
+  ;; 5
   (-> example-map
       parse-graph
-      (dfs-count-paths :you :out)))
+      (count-paths :you)))
 
 ;; For the solution...
 (comment
   (-> "input/day11/input.txt"
       read-file-lines
       parse-graph
-      (dfs-count-paths :you :out)))
+      (count-paths :you)))
+
+;; ----------------------------------------------------------------------------
+;; PART TWO
+
+(comment
+
+  (def example-map-2 ["svr: aaa bbb"
+                      "aaa: fft"
+                      "fft: ccc"
+                      "bbb: tty"
+                      "tty: ccc"
+                      "ccc: ddd eee"
+                      "ddd: hub"
+                      "hub: fff"
+                      "eee: dac"
+                      "dac: fff"
+                      "fff: ggg hhh"
+                      "ggg: out"
+                      "hhh: out"])
+
+  ;; 2
+  (-> example-map-2
+      parse-graph
+      (dfs-find-paths :svr :out)))
