@@ -85,6 +85,15 @@
       (apply min quotients)
       0)))
 
+(defn- update-transient-map
+  [t-map new-vec new-cost]
+  (let [old-cost (clojure.core/get t-map new-vec)]
+    (if old-cost
+      (if (< new-cost old-cost)
+        (assoc! t-map new-vec new-cost)
+        t-map)
+      (assoc! t-map new-vec new-cost))))
+
 (defn enumerate-half
   [target btn-effects]
   (let [n (count btn-effects)
@@ -93,45 +102,89 @@
               (if (= i n)
                 {(vec (repeat D 0)) 0}
                 (let [eff (nth btn-effects i)
-                      m   (max-presses target eff)
-                      rest-map (recur-gen (inc i))]
-                  (apply merge-with
-                         min
-                         (for [k (range (inc m))]
-                           (let [delta (mapv #(* k %) eff)]
-                             (into {}
-                                   (for [[vec cost] rest-map
-                                         :let [new-vec (mapv + vec delta)
-                                               new-cost (+ cost k)]
-                                         :when (every? (fn [[a b]] (<= a b))
-                                                       (map vector new-vec target))]
-                                     [new-vec new-cost]))))))))]
+                      m (max-presses target eff)
+                      rest-map (recur-gen (inc i))
+                      t-map (transient rest-map)]
+
+                  (loop [k 1
+                         current-t-map t-map]
+                    (if (> k m)
+                      (persistent! current-t-map)
+
+                      (let [delta (mapv #(* k %) eff)]
+                        (let [new-map
+                              (reduce
+                               (fn [acc-t-map [vec cost]]
+                                 (let [new-vec (mapv + vec delta)
+                                       new-cost (+ cost k)]
+                                   (if (every? (fn [[a b]] (<= a b)) (map vector new-vec target))
+                                     (update-transient-map acc-t-map new-vec new-cost)
+                                     acc-t-map)))
+                               current-t-map
+                               rest-map)]
+                          (recur (inc k) new-map))))))))]
       (recur-gen 0))))
+
+(defn combine-maps
+  [map1 map2 target]
+  (let [combinations
+        (for [[v1 c1] map1
+              [v2 c2] map2
+              :let [new-v (mapv + v1 v2)
+                    new-c (+ c1 c2)]
+              :when (every? (fn [[a b]] (<= a b)) (map vector new-v target))]
+          [new-v new-c])]
+    (reduce
+     (fn [acc [vec cost]]
+       (update acc vec (fn [old-cost]
+                         (if old-cost
+                           (min old-cost cost)
+                           cost))))
+     {}
+     combinations)))
 
 (defn min-btn-presses
   [target buttons]
   (let [D (count target)
         effects (mapv (partial press-vector D) buttons)
         n (count effects)
-        half (quot n 2)
-        left-effects  (subvec effects 0 half)
-        right-effects (subvec effects half n)
-        left-map  (enumerate-half target left-effects)
-        right-map (enumerate-half target right-effects)]
-    (reduce (fn [best [lvec lcost]]
-              (let [need (mapv - target lvec)
-                    rcost (get right-map need)]
-                (cond
-                  (nil? rcost) best
-                  (nil? best) (+ lcost rcost)
-                  :else (min best (+ lcost rcost)))))
-            nil
-            left-map)))
+        q (quot n 4)
+
+        effects-a (subvec effects 0 q)
+        effects-b (subvec effects q (* 2 q))
+        effects-c (subvec effects (* 2 q) (* 3 q))
+        effects-d (subvec effects (* 3 q) n)
+
+        map-a (enumerate-half target effects-a)
+        map-b (enumerate-half target effects-b)
+        map-c (enumerate-half target effects-c)
+        map-d (enumerate-half target effects-d)
+
+        map-ab (combine-maps map-a map-b target)
+
+        map-cd (combine-maps map-c map-d target)
+
+        final-result
+        (reduce
+         (fn [best [v-ab c-ab]]
+           (let [need (mapv - target v-ab)
+                 c-cd (get map-cd need)]
+             (cond
+               (nil? c-cd) best
+               :else (let [total-cost (+ c-ab c-cd)]
+                       (if (or (nil? best) (< total-cost best))
+                         total-cost
+                         best)))))
+         nil
+         map-ab)]
+
+    final-result))
 
 (defn- fewest-presses-required-joltage-config [instruction-strs]
   (let [instructions (map parse-instruction instruction-strs)]
     (->> instructions
          (map (fn [{:keys [joltage-diagram button-schematics]}]
+                (prn "Finding presses for:" joltage-diagram)
                 (min-btn-presses joltage-diagram button-schematics)))
          (reduce +))))
 
@@ -177,7 +230,10 @@
   (min-btn-presses [3 5 4 7] [[3] [1 3] [2] [2 3] [0 2] [0 1]])
 
   ;; 33
-  (fewest-presses-required-joltage-config example-instructions))
+  (fewest-presses-required-joltage-config example-instructions)
+
+  (fewest-presses-required-joltage-config
+   ["[####.###.#] (0,1,2,8,9) (0,2,9) (0,1,4,5,9) (0,3,7,9) (1,4,5) (1,2,8,9) (0,3,5,6,7,8) (0,2,5,7,9) (4,5,6) (2,3,4,7,8) {177,39,175,23,41,176,22,157,28,186}"]))
 
 ;; For the solution...
 (comment
