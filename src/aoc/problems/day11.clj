@@ -15,18 +15,26 @@
    {}
    map-lines))
 
+(defn- visits-dac-and-fft? [path]
+  (let [nodes (into #{} path)]
+    (and
+     (contains? nodes :dac)
+     (contains? nodes :fft))))
+
 (defn- dfs-find-paths
-  [graph start target]
+  [graph start target pred?]
   (letfn [(dfs [current visited current-path]
-            (cond (= current target) [current-path]
+            (cond (= current target) (if (pred? current-path)
+                                       [current-path]
+                                       [])
                   (visited current) []
                   :else (->> (get graph current [])
                              (map #(dfs % (conj visited current) (conj current-path %)))
                              (reduce concat))))]
     (dfs start #{} [])))
 
-(defn count-paths [graph start]
-  (->> (dfs-find-paths graph start :out)
+(defn count-paths [graph start pred?]
+  (->> (dfs-find-paths graph start :out pred?)
        count))
 
 ;; ----------------------------------------------------------------------------
@@ -50,14 +58,14 @@
   ;; 5
   (-> example-map
       parse-graph
-      (count-paths :you)))
+      (count-paths :you identity)))
 
 ;; For the solution...
 (comment
   (-> "input/day11/input.txt"
       read-file-lines
       parse-graph
-      (count-paths :you)))
+      (count-paths :you identity)))
 
 ;; ----------------------------------------------------------------------------
 ;; PART TWO
@@ -81,4 +89,4 @@
   ;; 2
   (-> example-map-2
       parse-graph
-      (dfs-find-paths :svr :out)))
+      (count-paths :svr visits-dac-and-fft?)))
