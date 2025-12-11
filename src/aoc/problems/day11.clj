@@ -23,19 +23,29 @@
 
 (defn- dfs-find-paths
   [graph start target pred?]
-  (letfn [(dfs [current visited current-path]
-            (cond (= current target) (if (pred? current-path)
-                                       [current-path]
-                                       [])
-                  (visited current) []
-                  :else (->> (get graph current [])
-                             (map #(dfs % (conj visited current) (conj current-path %)))
-                             (reduce concat))))]
-    (dfs start #{} [])))
+  (let [memo (atom {})]
+    (letfn [(dfs [current visited current-path]
+              (let [state [current visited]]
+                (if-let [cached (@memo state)]
+                  cached
+                  (let [result
+                        (cond
+                          (= current target)
+                          (if (pred? current-path) 1 0)
+
+                          (visited current)
+                          0
+
+                          :else
+                          (->> (get graph current [])
+                               (map #(dfs % (conj visited current) (conj current-path %)))
+                               (reduce +)))]
+                    (swap! memo assoc state result)
+                    result))))]
+      (dfs start #{} [start]))))
 
 (defn count-paths [graph start pred?]
-  (->> (dfs-find-paths graph start :out pred?)
-       count))
+  (dfs-find-paths graph start :out pred?))
 
 ;; ----------------------------------------------------------------------------
 ;; PART ONE
@@ -88,5 +98,12 @@
 
   ;; 2
   (-> example-map-2
+      parse-graph
+      (count-paths :svr visits-dac-and-fft?)))
+
+;; For the solution...
+(comment
+  (-> "input/day11/input.txt"
+      read-file-lines
       parse-graph
       (count-paths :svr visits-dac-and-fft?)))
