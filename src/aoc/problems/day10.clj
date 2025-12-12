@@ -1,7 +1,7 @@
 (ns aoc.problems.day10
   (:require [clojure.string :as string]
             [clojure.math.combinatorics :as combo]
-            [utils.files :refer [read-file-lines]]))
+            [aoc.utils.files :refer [read-file-lines]]))
 
 ;; TODO: clean up this code!
 

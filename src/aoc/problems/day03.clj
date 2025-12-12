@@ -1,5 +1,5 @@
 (ns aoc.problems.day03
-  (:require [utils.files :refer [read-file-lines]]))
+  (:require [aoc.utils.files :refer [read-file-lines]]))
 
 (defn- parse-digits-with-idx [s]
   (vec

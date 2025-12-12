@@ -1,6 +1,6 @@
 (ns aoc.problems.day01
   (:require [clojure.string :as string]
-            [utils.files :refer [read-file-lines]]))
+            [aoc.utils.files :refer [read-file-lines]]))
 
 (defn- floor-of-div-100 [n]
   (-> n

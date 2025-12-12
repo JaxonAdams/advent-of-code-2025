@@ -1,5 +1,5 @@
 (ns aoc.problems.day08
-  (:require [utils.files :refer [read-file-lines]]
+  (:require [aoc.utils.files :refer [read-file-lines]]
             [clojure.set :refer [union]]
             [clojure.string :as string]))
 

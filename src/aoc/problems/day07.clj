@@ -1,5 +1,5 @@
 (ns aoc.problems.day07
-  (:require [utils.files :refer [read-file-lines]]
+  (:require [aoc.utils.files :refer [read-file-lines]]
             [clojure.string :as string]))
 
 (defn- diagram-rows->matrix [diagram-rows]

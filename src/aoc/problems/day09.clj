@@ -1,5 +1,5 @@
 (ns aoc.problems.day09
-  (:require [utils.files :refer [read-file-lines]]
+  (:require [aoc.utils.files :refer [read-file-lines]]
             [clojure.string :refer [split]]))
 
 (defn- rect-area [[x1 y1] [x2 y2]]

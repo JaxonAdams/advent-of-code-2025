@@ -1,13 +1,10 @@
 (ns aoc.problems.day05
   (:require [clojure.string :as string]
-            [utils.files :refer [read-file-lines]]))
+            [utils.files :refer [read-file-lines]]
+            [aoc.utils.parsing :refer [split-at-value]]))
 
 (defn- bool->int [b]
   (if b 1 0))
-
-(defn split-at-value [value coll]
-  (let [[left right] (split-with (complement #{value}) coll)]
-    [left (drop-while #{value} right)]))
 
 (defn- parse-input [lines]
   (let [[fresh-ranges ids] (split-at-value "" lines)]

@@ -1,6 +1,6 @@
 (ns aoc.problems.day11
   (:require [clojure.string :as string]
-            [utils.files :refer [read-file-lines]]))
+            [aoc.utils.files :refer [read-file-lines]]))
 
 (defn- parse-graph [map-lines]
   (reduce

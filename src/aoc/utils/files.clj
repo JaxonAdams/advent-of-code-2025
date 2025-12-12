@@ -1,4 +1,4 @@
-(ns utils.files
+(ns aoc.utils.files
   (:require [clojure.string :as string]))
 
 (defn read-file-lines [file-path]

@@ -1,6 +1,6 @@
 (ns aoc.problems.day04
   (:require [clojure.string :as string]
-            [utils.files :refer [read-file-lines]]))
+            [aoc.utils.files :refer [read-file-lines]]))
 
 (defn- get-neighbors-in-bounds [[x y] diagram-rows]
   (let [rows (count diagram-rows)
