@@ -3,15 +3,8 @@
             [clojure.math.combinatorics :as combo]
             [utils.files :refer [read-file-lines]]))
 
-;; TODO: clean up this code!
-
-(defn- parse-joltage-diagram [diagram-str]
-  (-> diagram-str
-      rest
-      butlast
-      (->> (apply str))
-      (string/split #",")
-      (->> (map Integer/parseInt))))
+;; Note: It's messy, but it works ¯\_(ツ)_/¯
+;; I'll come back and clean it up later
 
 (defn- parse-indicator-light-diagram [diagram-str]
   (->> diagram-str
@@ -30,11 +23,9 @@
 (defn- parse-instruction [instruction]
   (let [parts (string/split instruction #" ")
         indicator-light-diagram (parse-indicator-light-diagram (first parts))
-        button-wiring-schematics (parse-button-wiring-schematics (-> parts rest butlast))
-        joltage-diagram (parse-joltage-diagram (last parts))]
+        button-wiring-schematics (parse-button-wiring-schematics (-> parts rest butlast))]
     {:light-diagram indicator-light-diagram
-     :button-schematics button-wiring-schematics
-     :joltage-diagram joltage-diagram}))
+     :button-schematics button-wiring-schematics}))
 
 (defn- button-press-combinations [buttons n]
   (let [with-n-repeats (mapcat (partial repeat n) buttons)]
@@ -68,131 +59,135 @@
                 (min-btn-presses-for-lights light-diagram button-schematics 1 not false)))
          (reduce +))))
 
-(defn press-vector
-  [dim button]
-  (reduce (fn [v idx] (update v idx inc))
-          (vec (repeat dim 0))
-          button))
+;; Credit where credit is due --
+;; I originally tried to implement a Meet-in-the-Middle approach, but it took
+;; too long to run. I got this idea from the following reddit post:
+;; https://www.reddit.com/r/adventofcode/comments/1pk87hl/2025_day_10_part_2_bifurcate_your_way_to_victory/
 
-(defn max-presses
-  [target effect]
-  (let [quotients (keep-indexed
-                   (fn [i e]
-                     (when (pos? e)
-                       (quot (nth target i) e)))
-                   effect)]
-    (if (seq quotients)
-      (apply min quotients)
-      0)))
+(def INF ##Inf)
 
-(defn- update-transient-map
-  [t-map new-vec new-cost]
-  (let [old-cost (clojure.core/get t-map new-vec)]
-    (if old-cost
-      (if (< new-cost old-cost)
-        (assoc! t-map new-vec new-cost)
-        t-map)
-      (assoc! t-map new-vec new-cost))))
+(defn parse-joltage-diagram-part-2 [diagram-str]
+  (-> diagram-str
+      rest
+      butlast
+      (->> (apply str))
+      (string/split #",")
+      (->> (map #(Integer/parseInt (string/trim %)))) ; Add trim for robustness
+      (vec))) ; The joltages must be a vector for consistent caching keys
 
-(defn enumerate-half
-  [target btn-effects]
-  (let [n (count btn-effects)
-        D (count target)]
-    (letfn [(recur-gen [i]
-              (if (= i n)
-                {(vec (repeat D 0)) 0}
-                (let [eff (nth btn-effects i)
-                      m (max-presses target eff)
-                      rest-map (recur-gen (inc i))
-                      t-map (transient rest-map)]
+(defn parse-button-wiring-schematics-part-2 [button-strings]
+  (->> button-strings
+       (map #(->> (re-seq #"\d+" %)
+                  (map Integer/parseInt)
+                  set)) ; Convert indices to sets for efficient lookups
+       (vec))) ; Ensure the list of button sets is a vector
 
-                  (loop [k 1
-                         current-t-map t-map]
-                    (if (> k m)
-                      (persistent! current-t-map)
+(defn parse-instruction-part-2 [instruction]
+  (let [parts (string/split instruction #"\s+") ; Use one or more spaces as delimiter
+        button-strings (-> parts rest butlast)
+        button-schematics (parse-button-wiring-schematics-part-2 button-strings)
+        joltage-diagram (parse-joltage-diagram-part-2 (last parts))]
+    {:buttons button-schematics ; Vector of sets
+     :joltages joltage-diagram})) ; Vector of integers
 
-                      (let [delta (mapv #(* k %) eff)]
-                        (let [new-map
-                              (reduce
-                               (fn [acc-t-map [vec cost]]
-                                 (let [new-vec (mapv + vec delta)
-                                       new-cost (+ cost k)]
-                                   (if (every? (fn [[a b]] (<= a b)) (map vector new-vec target))
-                                     (update-transient-map acc-t-map new-vec new-cost)
-                                     acc-t-map)))
-                               current-t-map
-                               rest-map)]
-                          (recur (inc k) new-map))))))))]
-      (recur-gen 0))))
+(defn- calculate-joltages-count
+  [presses buttons num-joltages]
+  (vec
+   (for [i (range num-joltages)] ; Target joltage index
+     (->> (map-indexed
+           (fn [j button-set]
+             (if (and (= 1 (nth presses j))
+                      (contains? button-set i))
+               1
+               0))
+           buttons)
+          (reduce + 0)))))
 
-(defn combine-maps
-  [map1 map2 target]
-  (persistent!
-   (reduce
-    (fn [t-map [v1 c1]]
-      (reduce
-       (fn [acc-t-map [v2 c2]]
-         (let [new-v (mapv + v1 v2)
-               new-c (+ c1 c2)]
-           (if (every? (fn [[a b]] (<= a b)) (map vector new-v target))
-             (update-transient-map acc-t-map new-v new-c)
-             acc-t-map)))
-       t-map
-       map2))
-    (transient {})
-    map1)))
+(defn- find-parity-matches [buttons target-parity]
+  (let [num-buttons (count buttons)
+        num-joltages (count target-parity)]
 
-(defn min-btn-presses
-  [target buttons]
-  (let [D (count target)
-        effects (mapv (partial press-vector D) buttons)
-        n (count effects)
-        q (quot n 4)
+    (filter
+     (fn [presses]
+       (let [counts (calculate-joltages-count presses buttons num-joltages)]
+         (every? true?
+                 (map (fn [count target] (= (mod count 2) target))
+                      counts
+                      target-parity))))
+     (for [i (range (int (Math/pow 2 num-buttons)))]
+       (vec
+        (for [j (range num-buttons)]
+          (-> i (quot (int (Math/pow 2 j))) (mod 2))))))))
 
-        effects-a (subvec effects 0 q)
-        effects-b (subvec effects q (* 2 q))
-        effects-c (subvec effects (* 2 q) (* 3 q))
-        effects-d (subvec effects (* 3 q) n)
+(declare solve-recursively) ; Forward declaration for memoized function
 
-        map-a (enumerate-half target effects-a)
-        map-b (enumerate-half target effects-b)
-        map-c (enumerate-half target effects-c)
-        map-d (enumerate-half target effects-d)
+(def memoized-solve-recursively
+  (memoize
+   (fn [buttons target-joltages]
+     (solve-recursively buttons target-joltages))))
 
-        map-ab (combine-maps map-a map-b target)
+(defn- solve-recursively [buttons target-joltages]
+  ;; Base Case: Target is all zeros
+  (if (every? zero? target-joltages)
+    0
 
-        map-cd (combine-maps map-c map-d target)
+    ;; Pruning/Invalid Check: No negative joltages are allowed
+    (if (some neg? target-joltages)
+      INF
 
-        final-result
-        (reduce
-         (fn [best [v-ab c-ab]]
-           (let [need (mapv - target v-ab)
-                 c-cd (get map-cd need)]
-             (cond
-               (nil? c-cd) best
-               :else (let [total-cost (+ c-ab c-cd)]
-                       (if (or (nil? best) (< total-cost best))
-                         total-cost
-                         best)))))
-         nil
-         map-ab)]
+      (let [num-joltages (count target-joltages)
 
-    final-result))
+            ;; 1. Determine the required parity (1 for odd, 0 for even)
+            target-parity (vec (map #(mod % 2) target-joltages))
 
-(defn- fewest-presses-required-joltage-config [instruction-strs]
-  (let [instructions (map parse-instruction instruction-strs)]
-    (->> instructions
-         (map (fn [{:keys [joltage-diagram button-schematics]}]
-                (prn "Finding presses for:" joltage-diagram)
-                (min-btn-presses joltage-diagram button-schematics)))
-         (reduce +))))
+            ;; 2. Find all minimal button press patterns (0s and 1s) that match the parity
+            matching-press-patterns (find-parity-matches buttons target-parity)]
+
+        (if (empty? matching-press-patterns)
+          ;; If no combination of 0/1 presses can achieve the target parity, it's impossible.
+          INF
+
+          ;; 3. Recursive Step: Evaluate the cost for each matching pattern
+          (let [min-presses
+                (apply min
+                       (for [pattern matching-press-patterns]
+                         (let [;; Cost from the 0/1 presses in this pattern
+                               pattern-cost (reduce + pattern)
+
+                               ;; Calculate the remaining joltage required
+                               ;; remaining = target - pattern_presses
+                               remaining-joltages (vec
+                                                   (map - target-joltages (calculate-joltages-count pattern buttons num-joltages)))]
+
+                               ;; Check for the "even number" condition
+                           (if (not (every? even? remaining-joltages))
+                             INF ; Should not happen if Part 1 logic is correct, but safe check
+
+                                 ;; Divide the remaining joltages by 2 and recurse
+                             (let [next-joltages (vec (map #(quot % 2) remaining-joltages))
+
+                                       ;; Total cost: 2 * f(next) + pattern_cost
+                                   recursive-cost (memoized-solve-recursively buttons next-joltages)]
+
+                                   ;; Check if the recursive call found a solution
+                               (if (= recursive-cost INF)
+                                 INF ; If sub-problem is impossible, this path is impossible
+
+                                     ;; Final Cost
+                                 (+ (* 2 recursive-cost) pattern-cost)))))))]
+
+            min-presses))))))
+
+(defn solve-part-2 [instruction]
+  (let [{:keys [buttons joltages]} (parse-instruction-part-2 instruction)]
+    (memoized-solve-recursively buttons joltages)))
 
 ;; ----------------------------------------------------------------------------
 ;; PART ONE
 
 (comment
 
-  (parse-instruction "[.##.] (3) (1,3) (2) (2,3) (0,2) (0,1) {3,5,4,7}")
+  (parse-instruction-part-2 "[.##.] (3) (1,3) (2) (2,3) (0,2) (0,1) {3,5,4,7}")
 
   (press-buttons [false true true false] [[1 3] [3]] not)
 
@@ -223,22 +218,17 @@
 ;; ----------------------------------------------------------------------------
 ;; PART TWO
 
+;; For the solution...
 (comment
 
-  ;; 10
-  (min-btn-presses [3 5 4 7] [[3] [1 3] [2] [2 3] [0 2] [0 1]])
-
   ;; 33
-  (fewest-presses-required-joltage-config example-instructions)
-
-  (fewest-presses-required-joltage-config
-   ["[#....#...] (3,5,6,8) (1,6) (1,2,4,7,8) (3,4,5,7,8) (0,2,4,5,6,8) (0,1,3) (1,2,6,7,8) (0,5) (0,1,4,6,8) {42,46,38,34,52,33,33,36,61}"])
-
-  (fewest-presses-required-joltage-config
-   ["[####.###.#] (0,1,2,8,9) (0,2,9) (0,1,4,5,9) (0,3,7,9) (1,4,5) (1,2,8,9) (0,3,5,6,7,8) (0,2,5,7,9) (4,5,6) (2,3,4,7,8) {177,39,175,23,41,176,22,157,28,186}"]))
+  (->> example-instructions
+       (map solve-part-2)
+       (reduce +)))
 
 ;; For the solution...
 (comment
-  (-> "input/day10/input.txt"
-      read-file-lines
-      fewest-presses-required-joltage-config))
+  (->> "input/day10/input.txt"
+       read-file-lines
+       (map solve-part-2)
+       (reduce +)))
