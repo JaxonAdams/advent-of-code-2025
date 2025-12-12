@@ -36,6 +36,12 @@
         regions (map #(build-region % shape-areas) (last parts))]
     {:shapes shapes :shape-areas shape-areas :regions regions}))
 
+;; After looking at the input, it looks like I can set an upper bound like this...
+(defn- count-can-fit-in-region [regions]
+  (->> regions
+       (filter #(< (:req-shape-area %) (:area %)))
+       count))
+
 ;; ----------------------------------------------------------------------------
 ;; PART ONE
 
@@ -45,3 +51,11 @@
 
   (let [parsed-input (parse-input example-lines)]
     (-> parsed-input :regions)))
+
+;; For the solution...
+(comment
+  (-> "input/day12/input.txt"
+      read-file-lines
+      parse-input
+      :regions
+      count-can-fit-in-region))
